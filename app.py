@@ -3,7 +3,7 @@ from flask import (Flask, render_template, request, redirect,
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from apscheduler.schedulers.background import BackgroundScheduler
-import psycopg2, psycopg2.extras, os, random, string, datetime, calendar, json, urllib.request, urllib.parse, atexit, smtplib
+import os, random, string, datetime, calendar, json, urllib.request, urllib.parse, atexit, smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from functools import wraps
@@ -35,10 +35,59 @@ DOCUMENT_TYPES = {
 }
 
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
 def get_db():
-    db = psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=psycopg2.extras.RealDictCursor)
-    db.autocommit = False
-    return db
+    if DATABASE_URL:
+        import psycopg2, psycopg2.extras
+        db = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        db.autocommit = False
+        return db
+    else:
+        import sqlite3
+        db = sqlite3.connect('siyaphakama.db')
+        db.row_factory = sqlite3.Row
+        return _SQLiteCompat(db)
+
+
+class _SQLiteCompat:
+    """Wraps SQLite to behave like psycopg2 — same cursor API, %s placeholders."""
+    def __init__(self, conn):
+        self._conn = conn
+    def cursor(self):
+        return _SQLiteCursor(self._conn.cursor())
+    def commit(self):
+        self._conn.commit()
+    def rollback(self):
+        self._conn.rollback()
+    def close(self):
+        self._conn.close()
+
+class _SQLiteCursor:
+    def __init__(self, cur):
+        self._cur = cur
+        self._returning_id = None
+    def execute(self, sql, params=()):
+        sql = sql.replace('%s', '?')
+        if 'RETURNING id' in sql:
+            sql = sql.replace(' RETURNING id', '')
+            self._cur.execute(sql, params)
+            self._returning_id = self._cur.lastrowid
+        else:
+            self._returning_id = None
+            self._cur.execute(sql, params)
+        return self
+    def fetchone(self):
+        if self._returning_id is not None:
+            result = self._returning_id
+            self._returning_id = None
+            return {'id': result}
+        row = self._cur.fetchone()
+        return dict(row) if row else None
+    def fetchall(self):
+        return [dict(r) for r in self._cur.fetchall()]
+    def close(self):
+        self._cur.close()
 
 
 def init_db():
@@ -1282,7 +1331,7 @@ def my_class_info():
         cur.execute('SELECT first_name, last_name FROM learners WHERE id=%s', (rep_id,))
         r = cur.fetchone()
         return f"{r['first_name']} {r['last_name']}" if r else None
-   result = jsonify(
+    result = jsonify(
         success    = True,
         grade      = grade,
         assigned   = True,
@@ -1292,8 +1341,6 @@ def my_class_info():
         rep2       = rep_name(row['rep2_learner_id']),
         updated    = (row['updated_at'] or '')[:10]
     )
-    cur.close(); db.close()
-    return result
 
 
 @app.route('/reset-admin-password')
