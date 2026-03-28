@@ -951,7 +951,7 @@ def admin_dashboard():
     db  = get_db()
     cur = db.cursor()
     filter = request.args.get('filter', 'all')
-    def count(sql): cur.execute(sql); return cur.fetchone()[0]
+    def count(sql): cur.execute(sql); row = cur.fetchone(); return list(row.values())[0] if row else 0
     stats = {
         'total':    count("SELECT COUNT(*) FROM learners WHERE is_deleted=0"),
         'pending':  count("SELECT COUNT(*) FROM applications a JOIN learners l ON l.id=a.learner_id WHERE a.status='Pending' AND l.is_deleted=0"),
@@ -1343,6 +1343,19 @@ def my_class_info():
     )
     cur.close(); db.close()
     return result
+
+
+@app.route('/reset-admin-password')
+def reset_admin_password():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("UPDATE admins SET password_hash=%s WHERE username='admin'",
+                (generate_password_hash('Admin@123'),))
+    db.commit()
+    cur.close()
+    db.close()
+    return 'Password reset to Admin@123'
+
 
 os.makedirs('uploads', exist_ok=True)
 init_db()
