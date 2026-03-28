@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block title %}Siyaphakama High School — Admissions{% endblock %}
+
+{% block nav %}
+  <button id="tab-register" class="register" style="display:none">Register / Apply</button>
+  <button id="tab-login" style="display:none">Login</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Registration Form -->
+<main id="page-register">
+  <div class="reg-page-bg"></div>
+  <form id="register-form" novalidate>
+    <h2 class="small">Learner Application &amp; Registration Form</h2>
+    <p class="muted">Create your account and apply. A 6-digit verification code will be sent to your email to confirm your account.</p>
+
+    <label for="regEmail">Email Address</label>
+    <input id="regEmail" name="email" type="email" placeholder="you@gmail.com" required/>
+    <div id="regEmail-error" class="error"></div>
+
+    <div class="row">
+      <div>
+        <label for="title">Title</label>
+        <select id="title" name="title" required>
+          <option value="">Select title</option>
+          <option>Mr</option><option>Miss</option><option>Ms</option><option>Mx</option>
+        </select>
+      </div>
+      <div>
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender" required>
+          <option value="">Select gender</option>
+          <option>Male</option><option>Female</option><option>Other</option>
+        </select>
+        <div id="gender-error" class="error"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div><label for="firstName">First Name</label><input id="firstName" name="firstName" type="text" /></div>
+      <div><label for="lastName">Last Name</label><input id="lastName" name="lastName" type="text" /></div>
+    </div>
+
+    <label for="idNumber">South African ID Number</label>
+    <input id="idNumber" name="idNumber" type="text" maxlength="13"/>
+    <div class="muted small">13-digit SA ID </div>
+    <div id="idNumber-error" class="error"></div>
+
+    <label for="cellphone">Cellphone Number</label>
+    <input id="cellphone" name="cellphone" type="tel" required maxlength="10"/>
+    <div class="muted small">10-digit number</div>
+    <div id="cellphone-error" class="error"></div>
+
+    <div class="row">
+      <div>
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input id="password" name="password" type="password" minlength="8" required/>
+          <button type="button" class="password-toggle" id="togglePassword">👁️</button>
+        </div>
+        <div id="password-strength" class="password-strength"></div>
+      </div>
+      <div>
+        <label for="confirmPassword">Confirm password</label>
+        <div class="password-field">
+          <input id="confirmPassword" name="confirmPassword" type="password" minlength="8" required/>
+          <button type="button" class="password-toggle" id="toggleConfirmPassword">👁️</button>
+        </div>
+        <div id="password-match" class="muted small"></div>
+      </div>
+    </div>
+
+    <label for="grade">Applying for Grade</label>
+    <select id="grade" name="grade" required>
+      <option value="">Select grade</option>
+      <option value="8">8</option><option value="9">9</option>
+      <option value="10">10</option><option value="11">11</option>
+    </select>
+
+    <div id="subject-selection" class="card hidden">
+      <h3 class="small">Subject Selection (Choose 8 subjects)</h3>
+      <div class="muted small">Compulsory: ISIZULU, ENGLISH, LIFE ORIENTATION, DRAMATIC ARTS</div>
+      <div id="subject-counter" class="muted small">Selected: 0/8</div>
+      <div class="subject-grid" id="subject-grid"></div>
+      <div id="subject-error" class="error"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="small">Parent / Guardian Details</h3>
+      <label for="parentRelationship">Relationship to Learner</label>
+      <select id="parentRelationship" name="parentRelationship" required>
+        <option value="">Select relationship</option>
+        <option>Mother</option><option>Father</option><option>Grandmother</option>
+        <option>Grandfather</option><option>Aunt</option><option>Uncle</option>
+        <option>Sister</option><option>Brother</option>
+        <option>Legal Guardian</option><option>Foster Parent</option><option>Other</option>
+      </select>
+      <label for="parentName">Parent / Guardian full name</label>
+      <input id="parentName" name="parentName" type="text"/>
+      <label for="parentId">Parent ID Number</label>
+      <input id="parentId" name="parentId" type="text" maxlength="13"/>
+      <div id="parentId-error" class="error"></div>
+      <label for="parentPhone">Parent cellphone</label>
+      <input id="parentPhone" name="parentPhone" type="tel" required maxlength="10"/>
+      <div id="parentPhone-error" class="error"></div>
+      <label for="parentEmail">Parent email (optional)</label>
+      <input id="parentEmail" name="parentEmail" type="email" placeholder="parent@example.com"/>
+    </div>
+
+    <div class="card" id="disability-section">
+      <h3 class="small">Disability / Special Needs</h3>
+      <label for="hasDisability">Does the learner have a disability?</label>
+      <select id="hasDisability" name="hasDisability" required>
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+
+      <div id="disability-details" style="display:none;margin-top:12px">
+        <label for="disabilityType">Type of Disability</label>
+        <select id="disabilityType" name="disabilityType">
+          <option value="">Select disability</option>
+          <option>Visual Impairment</option>
+          <option>Hearing Impairment</option>
+          <option>Physical / Mobility Impairment</option>
+          <option>Intellectual Disability</option>
+          <option>Learning Disability (e.g. Dyslexia, Dyscalculia)</option>
+          <option>Autism Spectrum Disorder</option>
+          <option>Attention Deficit Hyperactivity Disorder (ADHD)</option>
+          <option>Speech / Language Impairment</option>
+          <option>Epilepsy / Neurological Condition</option>
+          <option>Chronic Illness (e.g. Diabetes, Asthma)</option>
+          <option>Psychosocial Disability</option>
+          <option>Multiple Disabilities</option>
+          <option>Other</option>
+        </select>
+        <div id="disabilityType-error" class="error"></div>
+        <div class="muted small" style="margin-top:8px;padding:10px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a;">
+          ⚠️ A <strong>doctor's letter</strong> confirming the disability is required before your registration can be processed. You will need to upload it in your learner portal after registering.
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <div id="recaptcha-register"></div>
+      <button type="submit" class="register">Create account &amp; Apply</button>
+      <div id="register-msg" class="muted"></div>
+    </div>
+    <div id="register-error" class="error" role="alert"></div>
+  </form>
+</main>
+
+<!-- ══ Email Verification (after registration — OTP sent to email from form) ══ -->
+<main id="page-email-verify" class="hidden">
+  <div class="verify-card">
+    <!-- OTP entry -->
+    <div class="vstep active" id="vstep-otp">
+      <div class="vicon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          <circle cx="12" cy="16" r="1" fill="#b91c1c"/>
+        </svg>
+      </div>
+      <h2>Verify your email</h2>
+      <p class="muted">A 6-digit code was sent to <strong id="vemail-display"></strong>. Enter it below to activate your account.</p>
+      <div class="code-row">
+        <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+        <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+        <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+        <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+        <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+        <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+      </div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="vtimer-bar" style="width:100%"></div></div>
+      <div id="votp-status" class="status-msg"></div>
+      <div class="resend-row">
+        <span class="muted" style="font-size:13px">Didn't receive it?</span>
+        <button id="vresend-btn" class="resend-btn" onclick="handleResendEmailOtp()" disabled>Resend code</button>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div class="vstep" id="vstep-done">
+      <div class="check-circle">
+        <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+          <circle cx="25" cy="25" r="24" stroke="#15803d" stroke-width="1.5" opacity=".35"/>
+          <path class="check-path" d="M15 25l8 8 14-16" stroke="#15803d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2>Account verified!</h2>
+      <p class="muted"><strong id="vemail-confirmed"></strong> has been confirmed. Your account is now active.</p>
+    </div>
+  </div>
+</main>
+
+<!-- ══ Login ══ -->
+<main id="page-login" class="hidden">
+  <div class="login-page-bg"></div>
+  <form id="login-form" novalidate>
+    <h2 class="small">Learner Login</h2>
+    <label for="loginId">ID Number</label>
+    <input id="loginId" name="loginId" type="text" />
+    <div id="loginId-error" class="error"></div>
+    <label for="loginPassword">Password</label>
+    <div class="password-field">
+      <input id="loginPassword" name="loginPassword" type="password" required/>
+      <button type="button" class="password-toggle" id="toggleLoginPassword">👁️</button>
+    </div>
+    <div class="remember-me">
+      <input type="checkbox" id="rememberMe">
+      <label for="rememberMe" class="small">Remember me</label>
+    </div>
+    <div id="recaptcha-login"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button type="submit" class="primary">Login</button>
+      <button type="button" id="back-to-register">Back to Register</button>
+      <button type="button" id="open-forgot" class="forgot-password">Forgot Password?</button>
+      <div id="login-msg" class="muted"></div>
+    </div>
+    <div id="login-error" class="error" role="alert"></div>
+  </form>
+</main>
+
+<!-- ══ Forgot Password ══ -->
+<main id="page-forgot-password" class="hidden">
+  <form id="forgot-form" novalidate>
+    <h2 class="small">Forgot Password</h2>
+    <p class="muted">Enter your ID number. We'll send an OTP to your registered email.</p>
+    <label for="forgot-id">ID Number</label>
+    <input id="forgot-id" name="forgot-id" type="text" placeholder="13-digit ID number" required/>
+    <div id="forgot-id-error" class="error"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button type="submit" class="forgot-password">Send OTP</button>
+      <button type="button" id="back-to-login">Back to Login</button>
+      <div id="forgot-msg" class="muted"></div>
+    </div>
+    <div id="forgot-error" class="error" role="alert"></div>
+  </form>
+</main>
+
+<!-- ══ OTP Verification ══ -->
+<main id="page-otp" class="hidden">
+  <form id="otp-form" novalidate>
+    <h2 class="small">Verify OTP</h2>
+    <p class="muted">Enter the 6-digit OTP sent to your registered email: <strong id="otp-email-display"></strong></p>
+    <div class="code-row" id="pw-code-row">
+      <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+      <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+      <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+      <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+      <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+      <input class="code-input" type="text" inputmode="numeric" maxlength="1"/>
+    </div>
+    <div id="otp-error" class="error"></div>
+    <div class="otp-timer muted">OTP expires in: <span id="timer">05:00</span></div>
+    <div class="otp-resend">
+      <button type="button" id="resend-otp" disabled>Resend OTP</button>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button type="submit" class="forgot-password">Verify OTP</button>
+      <button type="button" id="back-to-forgot">Back</button>
+      <div id="otp-msg" class="muted"></div>
+    </div>
+  </form>
+</main>
+
+<!-- ══ Reset Password ══ -->
+<main id="page-reset" class="hidden">
+  <form id="reset-form" novalidate>
+    <h2 class="small">Reset Password</h2>
+    <div class="row">
+      <div>
+        <label for="new-password">New Password</label>
+        <div class="password-field">
+          <input id="new-password" type="password" minlength="8" required/>
+          <button type="button" class="password-toggle" id="toggleNewPassword">👁️</button>
+        </div>
+        <div id="new-password-strength" class="password-strength"></div>
+      </div>
+      <div>
+        <label for="confirm-new-password">Confirm New Password</label>
+        <div class="password-field">
+          <input id="confirm-new-password" type="password" minlength="8" required/>
+          <button type="button" class="password-toggle" id="toggleConfirmNewPassword">👁️</button>
+        </div>
+        <div id="new-password-match" class="muted small"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button type="submit" class="forgot-password">Reset Password</button>
+      <button type="button" id="back-to-otp">Back</button>
+      <div id="reset-msg" class="muted"></div>
+    </div>
+    <div id="reset-error" class="error" role="alert"></div>
+  </form>
+</main>
+
+{% endblock %}
+
+<div id="logo-fullscreen-overlay" class="logo-overlay">
+  <img id="logo-fullscreen-img" src="{{ url_for('static', filename='logo.webp') }}" alt="Siyaphakama HS Logo Fullscreen" />
+</div>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+<script>
+  // EmailJS config — browser-side OTP sending only
+  const EMAILJS_PUBLIC_KEY  = "eSrFAqXKN1J28DcTJ";
+  const EMAILJS_SERVICE_ID  = "boipara_23v";
+  const EMAILJS_TEMPLATE_ID = "template_866r2g2";
+  const SCHOOL_NAME         = "Siyaphakama High School";
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+  function flashLogoFullscreen() {
+    const overlay = document.getElementById('logo-fullscreen-overlay');
+    if (!overlay) return;
+    overlay.classList.add('open');
+    setTimeout(() => overlay.classList.remove('open'), 3000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const headerLogo = document.querySelector('.header-logo');
+    if (headerLogo) headerLogo.style.cursor = 'pointer';
+    headerLogo?.addEventListener('click', flashLogoFullscreen);
+  });
+</script>
+<script src="{{ url_for('static', filename='js/subjects.js') }}"></script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

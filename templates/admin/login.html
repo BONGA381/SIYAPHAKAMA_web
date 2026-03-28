@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin Login — Siyaphakama</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;font-family:system-ui,sans-serif;padding:20px}
+    .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+    .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,#b91c1c,#dc2626);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+    .logo-text{font-size:15px;font-weight:700;color:#f1f5f9;line-height:1.2}
+    .logo-sub{font-size:12px;color:#64748b;font-weight:400}
+    h2{font-size:22px;color:#f1f5f9;margin-bottom:6px}
+    .subtitle{font-size:14px;color:#64748b;margin-bottom:24px}
+    label{display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px}
+    input{width:100%;padding:10px 14px;background:#0f172a;border:1.5px solid #334155;border-radius:8px;color:#f1f5f9;font-size:14px;font-family:inherit;outline:none;transition:.2s}
+    input:focus{border-color:#b91c1c;box-shadow:0 0 0 3px rgba(185,28,28,.15)}
+    .field{margin-bottom:16px}
+    .btn{width:100%;padding:12px;background:linear-gradient(135deg,#b91c1c,#dc2626);border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;transition:.2s}
+    .btn:hover{opacity:.9;transform:translateY(-1px)}
+    .error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#f87171;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon"><img src="{{ url_for('static', filename='logo.webp') }}" alt="Siyaphakama HS logo" style="width:44px;height:44px;object-fit:cover;border-radius:10px;"/></div>
+    <div>
+      <div class="logo-text">Siyaphakama High School</div>
+      <div class="logo-sub">Admin Portal</div>
+    </div>
+  </div>
+  <h2>Admin Login</h2>
+  <p class="subtitle">Sign in to manage applications</p>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="POST">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" name="username" required autocomplete="username"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" name="password" required autocomplete="current-password"/>
+    </div>
+    <button class="btn" type="submit">Sign in →</button>
+  </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin Dashboard — Siyaphakama</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh;display:flex;flex-direction:column}
+    .layout{display:flex;flex:1;min-height:100vh}
+
+    .sidebar{width:0;background:#0f172a;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:width .3s;overflow:hidden}
+    .sidebar.open{width:240px;overflow:auto}
+    .sidebar-toggle{position:fixed;top:12px;z-index:200;width:32px;height:32px;border-radius:7px;background:#1e293b;border:1px solid #334155;color:#94a3b8;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:left .3s,background .2s;box-shadow:0 2px 8px rgba(0,0,0,.3);left:14px}
+    .sidebar-toggle:hover{background:#334155;color:#f1f5f9}
+    .main{transition:margin-left .3s; margin-left:0}
+    .sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .sidebar-icon{width:40px;height:40px;background:linear-gradient(135deg,#b91c1c,#dc2626);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px}
+    .sidebar-title{font-size:13px;font-weight:700;color:#f1f5f9;line-height:1.3}
+    .sidebar-sub{font-size:11px;color:#475569;margin-top:2px}
+    .sidebar-user{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:#64748b}
+    .sidebar-user strong{color:#94a3b8;display:block;margin-bottom:2px}
+    .sidebar-nav{padding:12px 0;flex:1;overflow-y:auto}
+    .nav-section{font-size:10px;font-weight:700;color:#334155;letter-spacing:1.5px;text-transform:uppercase;padding:10px 20px 6px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;border:none;background:none;width:100%;font-family:inherit;transition:.15s}
+    .nav-item:hover{background:rgba(255,255,255,.05);color:#e2e8f0}
+    .nav-item.active{background:rgba(185,28,28,.2);color:#fca5a5;border-right:3px solid #dc2626}
+    .nav-item .icon{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+    .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.06)}
+    .btn-logout{display:flex;align-items:center;gap:8px;padding:9px 14px;background:rgba(185,28,28,.15);color:#fca5a5;border:1px solid rgba(185,28,28,.3);border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;font-family:inherit;cursor:pointer;width:100%;transition:.2s}
+    .btn-logout:hover{background:rgba(185,28,28,.3)}
+
+    .main{margin-left:0;flex:1;display:flex;flex-direction:column;min-height:100vh}
+    .main.shift{margin-left:240px}
+    .topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+    .topbar-title{font-size:16px;font-weight:700}
+    .topbar-right{display:flex;align-items:center;gap:10px}
+    .logo-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;align-items:center;justify-content:center}
+    .logo-overlay.open{display:flex}
+    .logo-overlay img{max-width:85%;max-height:85%;border:4px solid #fff;border-radius:12px;box-shadow:0 0 30px rgba(255,255,255,.45)}
+    .content{padding:24px 28px;flex:1}
+
+    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+    .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;cursor:pointer;transition:.2s;text-decoration:none;display:block;border-left:4px solid transparent}
+    .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    .stat-card.active{border-left-color:currentColor;box-shadow:0 0 0 2px currentColor}
+    .stat-num{font-size:28px;font-weight:800;line-height:1}
+    .stat-label{font-size:12px;color:#64748b;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+    .s-total   {color:#1e293b} .s-total.active{box-shadow:0 0 0 2px #1e293b}
+    .s-pending {color:#d97706} .s-pending.active{box-shadow:0 0 0 2px #d97706}
+    .s-accepted{color:#15803d} .s-accepted.active{box-shadow:0 0 0 2px #15803d}
+    .s-declined{color:#b91c1c} .s-declined.active{box-shadow:0 0 0 2px #b91c1c}
+    .s-deleted {color:#7c3aed} .s-deleted.active{box-shadow:0 0 0 2px #7c3aed}
+
+    .table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .table-title{font-size:15px;font-weight:700}
+    .search-box{padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;width:240px;outline:none}
+    .search-box:focus{border-color:#b91c1c}
+
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;font-size:14px}
+    th{background:#f8fafc;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e2e8f0}
+    td{padding:11px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#fafafa}
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+    .badge-pending {background:#fef3c7;color:#d97706}
+    .badge-accepted{background:#dcfce7;color:#15803d}
+    .badge-declined{background:#fef2f2;color:#b91c1c}
+    .badge-deleted {background:#ede9fe;color:#7c3aed}
+    .btn-sm{padding:5px 11px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;text-decoration:none;display:inline-block;margin-left:4px}
+    .btn-blue{background:#0b5cff;color:#fff} .btn-blue:hover{background:#0a50e0}
+    .btn-amber{background:#f59e0b;color:#fff} .btn-amber:hover{background:#d97706}
+    .btn-red{background:#b91c1c;color:#fff} .btn-red:hover{background:#991b1b}
+
+    .flash{padding:12px 16px;border-radius:8px;margin-bottom:18px;font-size:14px}
+    .flash.success{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+    .flash.error  {background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    .flash.info   {background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
+
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center}
+    .modal.open{display:flex}
+    .modal-box{background:#fff;border-radius:14px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-box h3{margin-bottom:8px;font-size:17px}
+    .modal-box p{font-size:13px;color:#64748b;margin-bottom:16px}
+    .modal-box label{display:block;font-size:12px;font-weight:700;color:#475569;margin:10px 0 4px}
+    .modal-box input,.modal-box textarea{width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;font-family:inherit;outline:none}
+    .modal-box textarea{resize:vertical;min-height:80px}
+    .modal-box input:focus,.modal-box textarea:focus{border-color:#b91c1c}
+    .modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+    .btn-accept{background:#15803d;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit}
+    .btn-decline{background:#b91c1c;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit}
+    .btn-cancel{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit}
+    .btn-delete-confirm{background:#7c3aed;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit}
+    .warning-box{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;color:#b91c1c}
+
+    .panel{display:none;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px}
+    .panel.active{display:block}
+    .panel-title{font-size:16px;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #f1f5f9}
+    .pw-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
+    .pw-field label{display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:4px}
+    .pw-field input{width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:14px;outline:none;font-family:inherit}
+    .pw-field input:focus{border-color:#b91c1c}
+    .btn-pw{background:#1e293b;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:700;font-family:inherit;white-space:nowrap}
+
+    .grade-pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+    .grade-pill{padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;border:2px solid transparent;transition:.2s}
+    .gp-8 {background:#fef2f2;color:#b91c1c;border-color:#fecaca} .gp-8:hover{background:#b91c1c;color:#fff}
+    .gp-9 {background:#e0f2fe;color:#0369a1;border-color:#bae6fd} .gp-9:hover{background:#0369a1;color:#fff}
+    .gp-10{background:#dcfce7;color:#15803d;border-color:#bbf7d0} .gp-10:hover{background:#15803d;color:#fff}
+    .gp-11{background:#ede9fe;color:#7c3aed;border-color:#ddd6fe} .gp-11:hover{background:#7c3aed;color:#fff}
+    .gp-12{background:#f0fdfa;color:#0f766e;border-color:#99f6e4} .gp-12:hover{background:#0f766e;color:#fff}
+
+    @media(max-width:900px){
+      .stats{grid-template-columns:1fr 1fr}
+      .pw-row{grid-template-columns:1fr}
+      .sidebar{width:200px}
+      .main{margin-left:200px}
+    }
+    @media(max-width:640px){
+      .sidebar{transform:translateX(-100%)}
+      .main{margin-left:0}
+    }
+
+/* Admin dashboard background */
+.admin-page-bg{
+  position:fixed;inset:0;
+  background:url('/static/logo.webp') center 20% / cover no-repeat;
+  opacity:.08;
+  pointer-events:none;
+  z-index:0;
+}
+.layout{position:relative;z-index:1}
+  </style>
+</head>
+<body>
+  <div class="admin-page-bg"></div>
+<div class="layout">
+  <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">☰</button>
+
+  <aside class="sidebar" id="admin-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-icon" id="admin-logo-sidebar" style="cursor:pointer;"> 
+      <img id="admin-logo-sidebar-img" src="{{ url_for('static', filename='logo.webp') }}" alt="Siyaphakama HS logo" style="width:42px;height:42px;border-radius:10px;object-fit:cover;border:2px solid #dc2626;" />
+    </div>
+      <div class="sidebar-title">Siyaphakama High School</div>
+      <div class="sidebar-sub">Admin Portal</div>
+    </div>
+    <div class="sidebar-user">
+      <strong>Logged in as</strong>
+      👤 {{ admin }}
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Navigation</div>
+      <a class="nav-item {% if active_panel == 'dashboard' or not active_panel %}active{% endif %}" onclick="showPanel('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a class="nav-item" href="/admin/classes">
+        <span class="icon">🏫</span> Class Assignments
+      </a>
+      <div class="nav-section">Grade Views</div>
+      {% for g in ['8','9','10','11','12'] %}
+      <a class="nav-item" href="/admin/grade/{{ g }}">
+        <span class="icon">📚</span> Grade {{ g }}
+      </a>
+      {% endfor %}
+      <div class="nav-section">Settings</div>
+      <a class="nav-item" onclick="showPanel('password')">
+        <span class="icon">🔐</span> Change Password
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a class="btn-logout" href="/admin/logout">
+        <span>⬅️</span> Logout
+      </a>
+    </div>
+  </aside>
+
+  <div class="main" id="admin-main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title" style="cursor:pointer;" onclick="flashLogoFullscreen();">
+        <img id="admin-logo-topbar-img" src="{{ url_for('static', filename='logo.webp') }}" alt="School logo" style="width:24px;height:24px;margin-right:8px;vertical-align:middle;border:1px solid #e2e8f0;border-radius:5px;" />
+        Admin Dashboard
+      </div>
+      <div class="topbar-right">
+        <span style="font-size:12px;color:#64748b">Siyaphakama High School</span>
+      </div>
+    </div>
+
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+          <div class="flash {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats">
+          <a href="?filter=all" class="stat-card s-total {% if active_filter == 'all' %}active{% endif %}">
+            <div class="stat-num">{{ stats.total }}</div>
+            <div class="stat-label">Total</div>
+          </a>
+          <a href="?filter=pending" class="stat-card s-pending {% if active_filter == 'pending' %}active{% endif %}">
+            <div class="stat-num">{{ stats.pending }}</div>
+            <div class="stat-label">Pending</div>
+          </a>
+          <a href="?filter=accepted" class="stat-card s-accepted {% if active_filter == 'accepted' %}active{% endif %}">
+            <div class="stat-num">{{ stats.accepted }}</div>
+            <div class="stat-label">Accepted</div>
+          </a>
+          <a href="?filter=declined" class="stat-card s-declined {% if active_filter == 'declined' %}active{% endif %}">
+            <div class="stat-num">{{ stats.declined }}</div>
+            <div class="stat-label">Declined</div>
+          </a>
+          <a href="?filter=deleted" class="stat-card s-deleted {% if active_filter == 'deleted' %}active{% endif %}">
+            <div class="stat-num">{{ stats.deleted }}</div>
+            <div class="stat-label">Deleted</div>
+          </a>
+        </div>
+
+        <div class="table-header">
+          <span class="table-title">
+            {% if active_filter == 'pending' %}Pending Applications
+            {% elif active_filter == 'accepted' %}Accepted Learners
+            {% elif active_filter == 'declined' %}Declined Learners
+            {% elif active_filter == 'deleted' %}Deleted Learners
+            {% else %}All Learners
+            {% endif %}
+          </span>
+          <input class="search-box" id="search" placeholder="🔍  Search name or ID…" oninput="filterTable()"/>
+        </div>
+
+        <table id="learner-table">
+          <thead>
+            <tr>
+              <th>Learner</th>
+              <th>ID Number</th>
+              <th>Grade</th>
+              <th>Year</th>
+              <th>Status</th>
+              <th>{% if active_filter == 'deleted' %}Deleted{% else %}Applied{% endif %}</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in learners %}
+            <tr>
+              <td><strong>{{ l.first_name }} {{ l.last_name }}</strong><br><small style="color:#64748b">{{ l.email }}</small></td>
+              <td style="font-family:monospace;font-size:13px">{{ l.id_number }}</td>
+              <td>{{ l.grade or '—' }}</td>
+              <td>{{ l.year or '—' }}</td>
+              <td>
+                {% if active_filter == 'deleted' %}
+                  <span class="badge badge-deleted">Deleted</span>
+                {% elif l.status %}
+                  <span class="badge badge-{{ l.status | lower }}">{{ l.status }}</span>
+                {% else %}—{% endif %}
+              </td>
+              <td style="font-size:12px;color:#64748b">
+                {% if active_filter == 'deleted' %}
+                  {{ (l.deleted_at or '')[:10] }}
+                {% else %}
+                  {{ (l.applied_at or '')[:10] }}
+                {% endif %}
+              </td>
+              <td>
+                {% if active_filter != 'deleted' %}
+                  <a class="btn-sm btn-blue" href="/admin/learner/{{ l.id }}">View</a>
+                  {% if l.status == 'Pending' %}
+                    <button class="btn-sm btn-amber" onclick="openReview({{ l.app_id }}, '{{ l.first_name }} {{ l.last_name }}')">Review</button>
+                    <button class="btn-sm btn-red" onclick="openDelete({{ l.id }}, '{{ l.first_name }} {{ l.last_name }}')">Delete</button>
+                  {% endif %}
+                  {% if l.status == 'Declined' %}
+                    <button class="btn-sm btn-red" onclick="openDelete({{ l.id }}, '{{ l.first_name }} {{ l.last_name }}')">Delete</button>
+                  {% endif %}
+                {% else %}
+                  <span style="font-size:12px;color:#94a3b8;font-style:italic">Removed</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            {% if not learners %}
+            <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:28px;font-style:italic">No learners in this category.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel" id="panel-password">
+        <div class="panel-title">🔐 Change Admin Password</div>
+        <form method="POST" action="/admin/change-password">
+          <div class="pw-row">
+            <div class="pw-field">
+              <label>Current Password</label>
+              <input type="password" name="current_password" required placeholder="••••••••"/>
+            </div>
+            <div class="pw-field">
+              <label>New Password</label>
+              <input type="password" name="new_password" required placeholder="Min 8 characters"/>
+            </div>
+            <div class="pw-field">
+              <label>Confirm New Password</label>
+              <input type="password" name="confirm_password" required placeholder="Repeat password"/>
+            </div>
+            <div>
+              <button class="btn-pw" type="submit">Update Password</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="logo-fullscreen-overlay" class="logo-overlay">
+  <img id="logo-fullscreen-img" src="{{ url_for('static', filename='logo.webp') }}" alt="Siyaphakama HS Logo Fullscreen" />
+</div>
+
+<div class="modal" id="review-modal">
+  <div class="modal-box">
+    <h3 id="modal-learner-name">Review Application</h3>
+    <p>An AI-generated email will be sent to the learner notifying them of your decision.</p>
+    <form id="review-form" method="POST">
+      <input type="hidden" name="decision" id="decision-input"/>
+      <label>Reason / Notes (required for Decline, optional for Accept)</label>
+      <textarea name="reason" id="reason-input" placeholder="e.g. Application is incomplete, documents missing…"></textarea>
+      <div class="modal-actions">
+        <button type="submit" class="btn-accept" onclick="setDecision('Accepted')">✅ Accept</button>
+        <button type="submit" class="btn-decline" onclick="setDecision('Declined')">❌ Decline</button>
+        <button type="button" class="btn-cancel" onclick="closeReview()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="delete-modal">
+  <div class="modal-box">
+    <h3>⚠️ Permanently Delete Learner</h3>
+    <div class="warning-box">
+      You are about to permanently remove <strong id="delete-learner-name"></strong> from the system. This cannot be undone. The learner will be able to re-register if they wish.
+    </div>
+    <p>Enter your admin password to confirm this deletion.</p>
+    <form id="delete-form" method="POST">
+      <label>Admin Password</label>
+      <input type="password" name="admin_password" required placeholder="Enter your password to confirm"/>
+      <div class="modal-actions">
+        <button type="submit" class="btn-delete-confirm">🗑️ Confirm Delete</button>
+        <button type="button" class="btn-cancel" onclick="closeDelete()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const adminSidebar  = document.getElementById('admin-sidebar');
+  const adminMain     = document.getElementById('admin-main');
+  let sidebarOpen = false;
+
+  function setSidebarState(open) {
+    sidebarOpen = open;
+    if (open) {
+      adminSidebar.classList.add('open');
+      adminMain.classList.add('shift');
+      sidebarToggle.style.left = '254px';
+      sidebarToggle.textContent = '✕';
+    } else {
+      adminSidebar.classList.remove('open');
+      adminMain.classList.remove('shift');
+      sidebarToggle.style.left = '14px';
+      sidebarToggle.textContent = '☰';
+    }
+  }
+
+  sidebarToggle.addEventListener('click', () => setSidebarState(!sidebarOpen));
+  setSidebarState(false);
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    const titles = {dashboard: 'Admin Dashboard', password: 'Change Password'};
+    document.getElementById('topbar-title').textContent = titles[name] || 'Admin';
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const activeItem = document.querySelector('.nav-item[onclick="showPanel(\'' + name + '\')"]');
+    if (activeItem) activeItem.classList.add('active');
+  }
+
+  function flashLogoFullscreen() {
+    const overlay = document.getElementById('logo-fullscreen-overlay');
+    if (!overlay) return;
+    overlay.classList.add('open');
+    setTimeout(() => overlay.classList.remove('open'), 5000);
+  }
+
+  document.getElementById('admin-logo-sidebar')?.addEventListener('click', flashLogoFullscreen);
+  document.getElementById('admin-logo-topbar-img')?.addEventListener('click', flashLogoFullscreen);
+
+  function closeReview() {
+    document.getElementById('review-modal').classList.remove('open');
+  }
+  function setDecision(d) {
+    document.getElementById('decision-input').value = d;
+  }
+
+  function openDelete(lid, name) {
+    document.getElementById('delete-form').action = '/admin/learner/' + lid + '/delete';
+    document.getElementById('delete-learner-name').textContent = name;
+    document.getElementById('delete-modal').classList.add('open');
+  }
+  function closeDelete() {
+    document.getElementById('delete-modal').classList.remove('open');
+  }
+
+  document.getElementById('review-modal').addEventListener('click', function(e){ if(e.target===this) closeReview(); });
+  document.getElementById('delete-modal').addEventListener('click', function(e){ if(e.target===this) closeDelete(); });
+
+  function filterTable() {
+    const q = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('#learner-table tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Siyaphakama High School — Admissions Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #0a1628;
+      --navy-mid:    #112240;
+      --navy-light:  #1a3460;
+      --gold:        #c9a84c;
+      --gold-bright: #e8c96a;
+      --gold-pale:   #f5e9c8;
+      --gold-dim:    #8a6d28;
+      --white:       #ffffff;
+      --off-white:   #fdf8ee;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Lato', sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      overflow-x: hidden;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Background layers ── */
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(201,168,76,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 85% 85%, rgba(201,168,76,.08) 0%, transparent 55%),
+        linear-gradient(160deg, #0a1628 0%, #0d1f3c 45%, #091220 100%);
+      z-index: 0;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,168,76,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,168,76,.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      z-index: 0;
+    }
+
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      z-index: 0;
+      animation: pulse 8s ease-in-out infinite;
+    }
+    .bg-orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(201,168,76,.14), transparent 70%);
+      top: -120px; left: -80px;
+      animation-delay: 0s;
+    }
+    .bg-orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(26,52,96,.6), transparent 70%);
+      bottom: -100px; right: -60px;
+      animation-delay: 4s;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: .7; transform: scale(1); }
+      50%       { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 48px;
+      border-bottom: 1px solid rgba(201,168,76,.18);
+      animation: fadeDown .8s ease both;
+    }
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-crest {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--navy);
+      box-shadow: 0 0 20px rgba(201,168,76,.35);
+    }
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .logo-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gold-bright);
+      letter-spacing: .5px;
+      line-height: 1.2;
+    }
+    .logo-sub {
+      font-size: 10px;
+      font-weight: 300;
+      color: rgba(232,201,106,.6);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .header-year {
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(201,168,76,.5);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 80px 40px 60px;
+      max-width: none;
+      margin: 0;
+      width: 100%;
+      text-align: center;
+    }
+
+    .hero-content {
+      animation: fadeUp .9s ease .2s both;
+      width: 100%;
+      max-width: 1000px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 40px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      margin-bottom: 32px;
+      background: rgba(201,168,76,.1);
+      padding: 10px 18px;
+      border-radius: 30px;
+      border: 1px solid rgba(201,168,76,.3);
+    }
+    .eyebrow::before {
+      display: block;
+      width: 28px;
+      height: 1.5px;
+      background: var(--gold-bright);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 7vw, 76px);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -.8px;
+      margin-bottom: 28px;
+      color: var(--white);
+      max-width: 950px;
+    }
+    h1 em {
+      font-style: italic;
+      color: var(--gold-bright);
+    }
+
+    .hero-desc {
+      font-size: 18px;
+      font-weight: 300;
+      line-height: 1.85;
+      color: rgba(255,255,255,.78);
+      margin-bottom: 52px;
+      max-width: 650px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 64px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 44px;
+      border-radius: 8px;
+      font-family: 'Lato', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: transform .3s ease, box-shadow .3s ease, background .3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,.08);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .btn:hover::after { opacity: 1; }
+    .btn:hover { transform: translateY(-3px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      color: var(--navy);
+      box-shadow: 0 10px 40px rgba(201,168,76,.5);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 14px 56px rgba(201,168,76,.7);
+      transform: translateY(-3px) scale(1.02);
+    }
+    .btn-primary svg { flex-shrink: 0; }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--gold-bright);
+      border: 1.5px solid rgba(201,168,76,.45);
+      box-shadow: inset 0 0 0 0 var(--gold);
+      transition: box-shadow .3s ease, color .3s ease, transform .2s ease;
+    }
+    .btn-outline:hover {
+      box-shadow: inset 0 0 0 2px var(--gold);
+      color: var(--white);
+    }
+
+    /* ── Stats strip ── */
+    .stats {
+      display: flex;
+      gap: 28px;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: stretch;
+      width: 100%;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 32px;
+      background: rgba(201,168,76,.08);
+      border: 1px solid rgba(201,168,76,.2);
+      border-radius: 12px;
+      min-width: 160px;
+      transition: all .3s ease;
+    }
+    .stat-item:hover {
+      background: rgba(201,168,76,.15);
+      border-color: rgba(201,168,76,.4);
+      transform: translateY(-4px);
+    }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: var(--gold-bright);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.65);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* ── Illustration ── */
+    .hero-right {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: fadeUp .9s ease .4s both;
+    }
+
+    .illustration-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .illustration-card {
+      background: linear-gradient(145deg, rgba(26,52,96,.8), rgba(10,22,40,.95));
+      border: 1px solid rgba(201,168,76,.2);
+      border-radius: 16px;
+      padding: 40px 36px;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 32px 80px rgba(0,0,0,.5),
+        0 0 0 1px rgba(201,168,76,.08),
+        inset 0 1px 0 rgba(201,168,76,.12);
+    }
+    .illustration-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(201,168,76,.12), transparent 70%);
+      border-radius: 50%;
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(201,168,76,.12);
+      border: 1px solid rgba(201,168,76,.25);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 28px;
+    }
+    .card-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: blink 2s ease infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+
+    /* SVG Illustration */
+    .edu-illustration {
+      width: 100%;
+      height: auto;
+      margin: 8px 0 24px;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,.4));
+    }
+
+    .card-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .feature-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255,255,255,.7);
+    }
+    .feature-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: rgba(201,168,76,.1);
+      border: 1px solid rgba(201,168,76,.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+    }
+
+    /* ── Floating decorative elements ── */
+    .float-badge {
+      position: absolute;
+      background: linear-gradient(135deg, var(--navy-mid), var(--navy-light));
+      border: 1px solid rgba(201,168,76,.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 11px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      animation: float 5s ease-in-out infinite;
+      z-index: 5;
+    }
+    .float-badge-1 {
+      top: -20px; left: -30px;
+      animation-delay: 0s;
+    }
+    .float-badge-2 {
+      bottom: 30px; right: -25px;
+      animation-delay: 2.5s;
+    }
+    .float-badge .badge-title {
+      font-weight: 700;
+      color: var(--gold-bright);
+      letter-spacing: .5px;
+    }
+    .float-badge .badge-sub {
+      color: rgba(255,255,255,.45);
+      margin-top: 2px;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 10;
+      padding: 20px 48px;
+      border-top: 1px solid rgba(201,168,76,.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      animation: fadeUp .9s ease .6s both;
+    }
+    .footer-left {
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(255,255,255,.3);
+      letter-spacing: .5px;
+    }
+    .footer-right {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(201,168,76,.4);
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      header { padding: 16px 20px; }
+      .hero {
+        padding: 60px 20px 50px;
+      }
+      .hero-content {
+        padding: 0 20px;
+      }
+      h1 {
+        font-size: clamp(36px, 5vw, 52px);
+        margin-bottom: 20px;
+      }
+      .hero-desc {
+        font-size: 16px;
+        margin-bottom: 40px;
+      }
+      .cta-row {
+        margin-bottom: 48px;
+        gap: 16px;
+      }
+      .btn {
+        padding: 15px 36px;
+        font-size: 14px;
+      }
+      .stats {
+        gap: 16px;
+      }
+      .stat-item {
+        min-width: 140px;
+        padding: 20px 24px;
+      }
+      .stat-num {
+        font-size: 32px;
+      }
+      .stat-label {
+        font-size: 11px;
+      }
+      footer { padding: 16px 20px; }
+    }
+    @media (max-width: 480px) {
+      .hero {
+        padding: 40px 16px 35px;
+      }
+      .hero-content {
+        padding: 0 16px;
+      }
+      .eyebrow {
+        font-size: 10px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: clamp(28px, 4vw, 40px);
+        margin-bottom: 16px;
+      }
+      .hero-desc {
+        font-size: 15px;
+        margin-bottom: 32px;
+      }
+      .cta-row {
+        flex-direction: column;
+        margin-bottom: 36px;
+      }
+      .btn {
+        width: 100%;
+        padding: 14px 28px;
+        font-size: 13px;
+      }
+      .stats {
+        flex-direction: column;
+        margin-top: 0;
+        gap: 12px;
+      }
+      .stat-item {
+        width: 100%;
+        min-width: unset;
+        padding: 18px 20px;
+      }
+      .stat-num {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="bg-gradient"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-mark">
+      <div class="logo-crest">
+        <img src="{{ url_for('static', filename='logo.webp') }}" alt="Siyaphakama High School Logo" style="width:42px;height:42px;border-radius:50%;object-fit:cover;" />
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">SIYAPHAKAMA HIGH SCHOOL</span>
+        <span class="logo-sub">ADMISSIONS PORTAL</span>
+      </div>
+    </div>
+    <div class="header-year">2026 &mdash; 2027</div>
+  </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <!-- Left: Text + CTAs -->
+    <div class="hero-content">
+      <div class="eyebrow">Applications For 2027 Are Now Open</div>
+
+      <h1>Your Future<br/>Starts <em>Here.</em></h1>
+
+      <p class="hero-desc">
+        Welcome to Siyaphakama High School's admissions portal.<br>
+        Begin your journey toward academic excellence
+      </p>
+
+      <div class="cta-row">
+        <a href="/apply" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          Register Now
+        </a>
+        <a href="/apply#login" class="btn btn-outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Learner Login
+        </a>
+      </div>
+
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-num">4</span>
+          <span class="stat-label">Grades Available</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">100%</span>
+          <span class="stat-label">Online Process</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">Free</span>
+          <span class="stat-label">Application</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-left">© 2026 Siyaphakama High School &nbsp;·&nbsp; Admissions Office</div>
+    <div class="footer-right">Secured Online Portal</div>
+  </footer>
+</div>
+</body>
+</html>
