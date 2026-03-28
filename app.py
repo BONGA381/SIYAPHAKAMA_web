@@ -9,19 +9,19 @@ from email.mime.text import MIMEText
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'siyaphakama_secret_key_2025')
+app.secret_key = os.environ.get('SECRET_KEY', 'fallback_secret_key')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
-EMAILJS_PUBLIC_KEY   = os.environ.get('EMAILJS_PUBLIC_KEY', 'eSrFAqXKN1J28DcTJ')
-EMAILJS_SERVICE_ID   = os.environ.get('EMAILJS_SERVICE_ID', 'boipara_23v')
-EMAILJS_TEMPLATE_ID  = os.environ.get('EMAILJS_TEMPLATE_ID', 'template_866r2g2')
-RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '6LdrQ5csAAAAAN3cWu3pZf4S7slgOYIcsaumLywS')
+EMAILJS_PUBLIC_KEY   = os.environ.get('EMAILJS_PUBLIC_KEY', '')
+EMAILJS_SERVICE_ID   = os.environ.get('EMAILJS_SERVICE_ID', '')
+EMAILJS_TEMPLATE_ID  = os.environ.get('EMAILJS_TEMPLATE_ID', '')
+RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY', '')
 RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
-GEMINI_API_KEY       = os.environ.get('GEMINI_API_KEY', 'AIzaSyDt5jy2URSv0O68UcJDHv_KFi3SEtgHfGw')
+GEMINI_API_KEY       = os.environ.get('GEMINI_API_KEY', '')
 SCHOOL_NAME          = "Siyaphakama High School"
-SMTP_SENDER_EMAIL    = os.environ.get('SMTP_SENDER_EMAIL', 'sbongasithole98@gmail.com')
-SMTP_SENDER_PASSWORD = os.environ.get('SMTP_SENDER_PASSWORD', 'nstj dzfb xaak jpuq')
+SMTP_SENDER_EMAIL    = os.environ.get('SMTP_SENDER_EMAIL', '')
+SMTP_SENDER_PASSWORD = os.environ.get('SMTP_SENDER_PASSWORD', '')
 SMTP_SENDER_NAME     = "Siyaphakama HS Admissions"
 ALLOWED_EXTENSIONS   = {'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
