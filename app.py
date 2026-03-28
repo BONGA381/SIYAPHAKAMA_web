@@ -1344,19 +1344,6 @@ def my_class_info():
     cur.close(); db.close()
     return result
 
-
-@app.route('/reset-admin-password')
-def reset_admin_password():
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("UPDATE admins SET password_hash=%s WHERE username='admin'",
-                (generate_password_hash('Admin@123'),))
-    db.commit()
-    cur.close()
-    db.close()
-    return 'Password reset to Admin@123'
-
-
 os.makedirs('uploads', exist_ok=True)
 init_db()
 
