@@ -1295,8 +1295,8 @@ def my_class_info():
     cur.close(); db.close()
     return result
 
+os.makedirs('uploads', exist_ok=True)
+init_db()
 
 if __name__ == '__main__':
-    os.makedirs('uploads', exist_ok=True)
-    init_db()
     app.run(debug=True)
