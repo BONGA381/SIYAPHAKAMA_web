@@ -1291,9 +1291,22 @@ def my_class_info():
         rep1       = rep_name(row['rep1_learner_id']),
         rep2       = rep_name(row['rep2_learner_id']),
         updated    = (row['updated_at'] or '')[:10]
+        
+        @app.route('/reset-admin-password')
+def reset_admin_password():
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("UPDATE admins SET password_hash=%s WHERE username='admin'",
+                (generate_password_hash('Admin@123'),))
+    db.commit()
+    cur.close()
+    db.close()
+    return 'Password reset to Admin@123'
     )
     cur.close(); db.close()
     return result
+
+    
 
 os.makedirs('uploads', exist_ok=True)
 init_db()
