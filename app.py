@@ -659,11 +659,14 @@ def verify_account_otp():
     cur.execute('SELECT * FROM applications WHERE learner_id=%s ORDER BY id DESC LIMIT 1', (learner['id'],))
     app_row = cur.fetchone()
     full_name = f"{learner['first_name']} {learner['last_name']}"
-    body      = ai_registration_msg(full_name, app_row['grade'], app_row['year'])
-    subject   = f"[{SCHOOL_NAME}] Application Received — Under Review"
-    send_emailjs(learner['email'], subject, body, full_name)
-    log_email(db, learner['id'], 'registration_received', learner['email'])
-    db.commit()
+    try:
+        body    = ai_registration_msg(full_name, app_row['grade'], app_row['year'])
+        subject = f"[{SCHOOL_NAME}] Application Received — Under Review"
+        send_emailjs(learner['email'], subject, body, full_name)
+        log_email(db, learner['id'], 'registration_received', learner['email'])
+        db.commit()
+    except Exception as e:
+        app.logger.error(f"Post-verification email failed: {e}")
     cur.close(); db.close()
     return jsonify(success=True)
 
