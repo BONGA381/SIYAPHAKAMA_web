@@ -1282,7 +1282,7 @@ def my_class_info():
         cur.execute('SELECT first_name, last_name FROM learners WHERE id=%s', (rep_id,))
         r = cur.fetchone()
         return f"{r['first_name']} {r['last_name']}" if r else None
-    result = jsonify(
+   result = jsonify(
         success    = True,
         grade      = grade,
         assigned   = True,
@@ -1291,8 +1291,12 @@ def my_class_info():
         rep1       = rep_name(row['rep1_learner_id']),
         rep2       = rep_name(row['rep2_learner_id']),
         updated    = (row['updated_at'] or '')[:10]
-        
-        @app.route('/reset-admin-password')
+    )
+    cur.close(); db.close()
+    return result
+
+
+@app.route('/reset-admin-password')
 def reset_admin_password():
     db = get_db()
     cur = db.cursor()
@@ -1302,11 +1306,7 @@ def reset_admin_password():
     cur.close()
     db.close()
     return 'Password reset to Admin@123'
-    )
-    cur.close(); db.close()
-    return result
 
-    
 
 os.makedirs('uploads', exist_ok=True)
 init_db()
