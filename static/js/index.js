@@ -79,13 +79,17 @@ async function handleVerifyEmailOtp(code){
 
   if (data.success){
     stopVTimer(); clearVResend();
-    el('vemail-confirmed').textContent = verifyEmail;
-    vshowStep('vstep-done');
+    try {
+      if(el('vemail-confirmed')) el('vemail-confirmed').textContent = verifyEmail || '';
+      vshowStep('vstep-done');
+    } catch(err){ console.warn('UI update error:', err); }
     setTimeout(()=>{
-      el('tab-register').style.display = '';
-      el('tab-login').style.display    = '';
-      showPage('page-login');
-      showOk('login-msg','Account verified! Please log in.');
+      try {
+        if(el('tab-register')) el('tab-register').style.display = '';
+        if(el('tab-login')) el('tab-login').style.display = '';
+        showPage('page-login');
+        showOk('login-msg','Account verified! Please log in.');
+      } catch(err){ window.location.href = '/'; }
     }, 2000);
   } else {
     setVStatus(data.error, 'err');

@@ -340,7 +340,7 @@ def get_learner(id_number):
 def gemini_message(prompt):
     payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
     req = urllib.request.Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent%skey={GEMINI_API_KEY}",
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
         data=payload, headers={"Content-Type": "application/json"}, method="POST"
     )
     try:
@@ -774,6 +774,20 @@ def delete_application():
 @app.route('/edit-cellphone', methods=['POST'])
 @learner_required
 def edit_cellphone():
+    cellphone = request.form.get('cellphone', '').strip()
+    if not cellphone:
+        return jsonify(success=False, error='Cellphone is required.')
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('UPDATE learners SET cellphone=%s WHERE id=%s', (cellphone, session['learner_id']))
+    db.commit()
+    cur.close(); db.close()
+    return jsonify(success=True)
+
+
+@app.route('/edit-profile', methods=['POST'])
+@learner_required
+def edit_profile():
     cellphone = request.form.get('cellphone', '').strip()
     if not cellphone:
         return jsonify(success=False, error='Cellphone is required.')
@@ -1347,17 +1361,6 @@ def my_class_info():
     cur.close(); db.close()
     return result
 
-
-@app.route('/reset-admin-password')
-def reset_admin_password():
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("UPDATE admins SET password_hash=%s WHERE username='admin'",
-                (generate_password_hash('Admin@123'),))
-    db.commit()
-    cur.close()
-    db.close()
-    return 'Password reset to Admin@123'
 
 
 os.makedirs('uploads', exist_ok=True)
