@@ -9,9 +9,10 @@
     body{font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b;min-height:100vh}
     nav{background:#1e293b;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.2)}
     .nav-brand{font-size:15px;font-weight:700;color:#f1f5f9;text-decoration:none;display:flex;align-items:center;gap:8px}
-    .nav-right{display:flex;gap:10px}
+    .nav-right{display:flex;gap:10px;align-items:center}
     .nav-link{font-size:13px;color:#94a3b8;text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid #334155}
     .nav-link:hover{color:#f1f5f9;background:#334155}
+    .nav-chat-badge{background:#f97316;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:2px 7px;margin-left:4px;vertical-align:middle}
     main{max-width:960px;margin:0 auto;padding:28px 20px}
     .back-link{font-size:13px;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:20px}
     .back-link:hover{color:#1e293b}
@@ -65,14 +66,22 @@
     .btn-a{background:#15803d;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit}
     .btn-d{background:#b91c1c;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit}
     .btn-c{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:600;font-family:inherit}
+    /* Email logo styling */
+    .email-logo-preview{display:inline-flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;font-size:13px;color:#475569}
   </style>
 </head>
 <body>
 <nav>
-  <a class="nav-brand" href="/admin">🏫 Siyaphakama Admin</a>
+  <a class="nav-brand" href="/admin">
+    <img src="{{ url_for('static', filename='logo.webp') }}" alt="Logo" style="width:32px;height:32px;border-radius:7px;object-fit:cover;border:2px solid #dc2626;flex-shrink:0;" />
+    Siyaphakama Admin
+  </a>
   <div class="nav-right">
     <a class="nav-link" href="/admin">← Dashboard</a>
-    <a class="nav-link" href="/admin/classes">🏫 Classes</a>
+    <a class="nav-link" href="/admin/classes">
+      <img src="{{ url_for('static', filename='logo.webp') }}" alt="" style="width:16px;height:16px;border-radius:3px;object-fit:cover;vertical-align:middle;margin-right:4px;"/>
+      Classes
+    </a>
     <a class="nav-link" href="/admin/logout">Logout</a>
   </div>
 </nav>
@@ -83,6 +92,8 @@
       <div class="flash {{ cat }}">{{ msg }}</div>
     {% endfor %}
   {% endwith %}
+
+  <a class="back-link" href="/admin">← Back to Dashboard</a>
 
   <div class="page-header">
     <div>
@@ -118,7 +129,13 @@
       <div class="info-row"><span class="info-label">Title</span><span class="info-value">{{ learner.title }}</span></div>
       <div class="info-row"><span class="info-label">Gender</span><span class="info-value">{{ learner.gender }}</span></div>
       <div class="info-row"><span class="info-label">ID Number</span><span class="info-value">{{ learner.id_number }}</span></div>
-      <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ learner.email }}</span></div>
+      <div class="info-row">
+        <span class="info-label">Email</span>
+        <span class="info-value" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <img src="{{ url_for('static', filename='logo.webp') }}" alt="" style="width:16px;height:16px;border-radius:3px;object-fit:cover;flex-shrink:0;"/>
+          {{ learner.email }}
+        </span>
+      </div>
       <div class="info-row"><span class="info-label">Cellphone</span><span class="info-value">{{ learner.cellphone }}</span></div>
       <div class="info-row"><span class="info-label">Registered</span><span class="info-value">{{ learner.created_at[:10] }}</span></div>
       <div class="info-row">
@@ -155,7 +172,15 @@
       <div class="info-row"><span class="info-label">Name</span><span class="info-value">{{ parent.name }}</span></div>
       <div class="info-row"><span class="info-label">ID Number</span><span class="info-value">{{ parent.id_number }}</span></div>
       <div class="info-row"><span class="info-label">Phone</span><span class="info-value">{{ parent.phone }}</span></div>
-      <div class="info-row"><span class="info-label">Email</span><span class="info-value">{{ parent.email or '—' }}</span></div>
+      <div class="info-row">
+        <span class="info-label">Email</span>
+        <span class="info-value" style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          {% if parent.email %}
+          <img src="{{ url_for('static', filename='logo.webp') }}" alt="" style="width:16px;height:16px;border-radius:3px;object-fit:cover;flex-shrink:0;"/>
+          {% endif %}
+          {{ parent.email or '—' }}
+        </span>
+      </div>
       {% else %}<em style="color:#64748b;font-size:14px">No parent details.</em>{% endif %}
     </div>
 
@@ -206,14 +231,17 @@
     {% else %}<em style="font-size:14px;color:#64748b">No subjects recorded.</em>{% endif %}
   </div>
 
-  <!-- Email log -->
+  <!-- Email log with logo -->
   <div class="card" style="margin-top:16px">
     <h3>Email History</h3>
     {% if emails %}
     <div class="email-log">
       {% for e in emails %}
       <div class="email-row">
-        <span class="email-type">{{ e.email_type | replace('_', ' ') }}</span>
+        <span class="email-type" style="display:flex;align-items:center;gap:6px">
+          <img src="{{ url_for('static', filename='logo.webp') }}" alt="" style="width:18px;height:18px;border-radius:4px;object-fit:cover;flex-shrink:0;"/>
+          {{ e.email_type | replace('_', ' ') }}
+        </span>
         <span class="email-meta">{{ e.recipient }}<br>{{ e.sent_at[:16] | replace('T',' ') }}</span>
       </div>
       {% endfor %}
@@ -226,7 +254,7 @@
 <div class="modal" id="review-modal">
   <div class="modal-box">
     <h3 id="modal-title">Review Application</h3>
-    <p style="font-size:13px;color:#64748b;margin-bottom:12px">An AI-generated email will be sent to the learner.</p>
+    <p style="font-size:13px;color:#64748b;margin-bottom:12px">An AI-generated email with the school logo will be sent to the learner.</p>
     <form id="review-form" method="POST">
       <input type="hidden" name="decision" id="decision-input"/>
       <label>Reason / Notes <span id="reason-hint" style="color:#94a3b8;font-weight:400">(optional for Accept)</span></label>

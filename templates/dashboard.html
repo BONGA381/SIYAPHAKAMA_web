@@ -17,20 +17,20 @@
   <h2 class="small">Learner Dashboard</h2>
   <div id="profile-summary" style="line-height:1.9">
     <strong>Title:</strong> {{ learner.title }}<br/>
-    <strong>Name:</strong> {{ learner.first_name }} {{ learner.last_name }}<br/>
+    <strong>Name:</strong> <span id="ps-name">{{ learner.first_name }} {{ learner.last_name }}</span><br/>
     <strong>Gender:</strong> {{ learner.gender }}<br/>
     <strong>ID Number:</strong> {{ learner.id_number }}<br/>
-    <strong>Cellphone:</strong> {{ learner.cellphone }}<br/>
-    <strong>Email:</strong> {{ learner.email }}
+    <strong>Cellphone:</strong> <span id="ps-cell">{{ learner.cellphone }}</span><br/>
+    <strong>Email:</strong> <span id="ps-email">{{ learner.email }}</span>
   </div>
   <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-    <button id="btn-edit-profile" class="primary">Edit Profile</button>
-    <button id="btn-edit-parent" class="primary">Edit Parent Details</button>
+    <button id="btn-edit-profile" class="primary">✏️ Edit My Profile</button>
+    <button id="btn-edit-parent" class="primary">✏️ Edit Parent Details</button>
     {% if app and app.status == 'Pending' %}
-    <button id="btn-delete-app" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">Delete Application</button>
+    <button id="btn-delete-app" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">🗑 Delete Application</button>
     {% endif %}
     {% if not app %}
-    <button id="btn-apply-next" title="Apply for next academic year">Apply for next year</button>
+    <button id="btn-apply-next" title="Apply for next academic year">📝 Apply for next year</button>
     {% endif %}
   </div>
   <div id="profile-msg" class="muted" style="margin-top:8px"></div>
@@ -178,21 +178,21 @@
   <h3 class="small">Parent / Guardian Details</h3>
   <div id="parent-details" style="line-height:1.9">
     {% if parent %}
-    <strong>Relationship:</strong> {{ parent.relationship }}<br/>
-    <strong>Name:</strong> {{ parent.name }}<br/>
-    <strong>ID Number:</strong> {{ parent.id_number }}<br/>
-    <strong>Phone:</strong> {{ parent.phone }}<br/>
-    <strong>Email:</strong> {{ parent.email or '—' }}
+    <strong>Relationship:</strong> <span id="pd-rel">{{ parent.relationship }}</span><br/>
+    <strong>Name:</strong> <span id="pd-name">{{ parent.name }}</span><br/>
+    <strong>ID Number:</strong> <span id="pd-id">{{ parent.id_number }}</span><br/>
+    <strong>Phone:</strong> <span id="pd-phone">{{ parent.phone }}</span><br/>
+    <strong>Email:</strong> <span id="pd-email">{{ parent.email or '—' }}</span>
     {% else %}
     <em>No parent details found.</em>
     {% endif %}
   </div>
 </div>
 
-<!-- Password Gate Modal -->
+<!-- ═══ PASSWORD GATE MODAL ═══ -->
 <div id="modal-password-gate" class="modal hidden">
   <div class="modal-box">
-    <h3 id="pw-gate-title">Confirm Identity</h3>
+    <h3 id="pw-gate-title">Confirm Your Identity</h3>
     <p class="muted" style="margin-bottom:14px;font-size:13px">Enter your login password to continue.</p>
     <label>Password</label>
     <div class="password-field">
@@ -207,24 +207,32 @@
   </div>
 </div>
 
-<!-- Edit Profile Modal -->
+<!-- ═══ EDIT PROFILE MODAL (name, surname, email, cellphone) ═══ -->
 <div id="modal-profile" class="modal hidden">
   <div class="modal-box">
-    <h3>Edit Profile</h3>
-    <label>Cellphone</label>
-    <input id="edit-cellphone" type="tel" maxlength="10" />
-    <div id="edit-cellphone-error" class="error"></div>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button id="save-profile" class="primary">Save</button>
+    <h3>✏️ Edit My Profile</h3>
+    <p class="muted" style="font-size:12px;margin-bottom:14px">Update your personal details below.</p>
+    <label>First Name</label>
+    <input id="edit-first-name" type="text" placeholder="First name"/>
+    <label style="margin-top:10px">Surname</label>
+    <input id="edit-last-name" type="text" placeholder="Last name"/>
+    <label style="margin-top:10px">Email Address</label>
+    <input id="edit-email" type="email" placeholder="your@email.com"/>
+    <label style="margin-top:10px">Cellphone Number</label>
+    <input id="edit-cellphone" type="tel" maxlength="10" placeholder="0XX XXX XXXX"/>
+    <div id="edit-profile-error" class="error" style="margin-top:8px"></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button id="save-profile" class="primary">Save Changes</button>
       <button id="cancel-profile">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- Edit Parent Modal -->
+<!-- ═══ EDIT PARENT MODAL (all fields) ═══ -->
 <div id="modal-parent" class="modal hidden">
   <div class="modal-box">
-    <h3>Edit Parent / Guardian</h3>
+    <h3>✏️ Edit Parent / Guardian</h3>
+    <p class="muted" style="font-size:12px;margin-bottom:14px">Update parent or guardian details below.</p>
     <label>Relationship</label>
     <select id="edit-p-rel">
       <option>Mother</option><option>Father</option><option>Grandmother</option>
@@ -232,41 +240,76 @@
       <option>Sister</option><option>Brother</option>
       <option>Legal Guardian</option><option>Foster Parent</option><option>Other</option>
     </select>
-    <label>Full Name</label>
-    <input id="edit-p-name" type="text"/>
-    <label>ID Number</label>
-    <input id="edit-p-id" type="text" maxlength="13"/>
+    <label style="margin-top:10px">Full Name</label>
+    <input id="edit-p-name" type="text" placeholder="Parent/Guardian full name"/>
+    <label style="margin-top:10px">ID Number</label>
+    <input id="edit-p-id" type="text" maxlength="13" placeholder="13-digit SA ID number"/>
     <div id="edit-p-id-error" class="error"></div>
-    <label>Phone</label>
-    <input id="edit-p-phone" type="tel" maxlength="10"/>
+    <label style="margin-top:10px">Phone Number</label>
+    <input id="edit-p-phone" type="tel" maxlength="10" placeholder="0XX XXX XXXX"/>
     <div id="edit-p-phone-error" class="error"></div>
-    <label>Email (optional)</label>
-    <input id="edit-p-email" type="email"/>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button id="save-parent" class="primary">Save</button>
+    <label style="margin-top:10px">Email (optional)</label>
+    <input id="edit-p-email" type="email" placeholder="parent@email.com"/>
+    <div id="edit-parent-error" class="error" style="margin-top:8px"></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button id="save-parent" class="primary">Save Changes</button>
       <button id="cancel-parent">Cancel</button>
     </div>
-    <div id="edit-parent-error" class="error"></div>
   </div>
 </div>
 
-<!-- Delete Application Modal -->
+<!-- ═══ DELETE APPLICATION MODAL ═══ -->
 <div id="modal-delete-app" class="modal hidden">
   <div class="modal-box">
-    <h3 style="color:#b91c1c">Delete Application</h3>
+    <h3 style="color:#b91c1c">🗑 Delete Application</h3>
     <p class="muted" style="margin-bottom:12px;font-size:13px">
-      This will permanently delete your current application and all selected subjects. You will need to re-apply. This cannot be undone.
+      <strong>Warning:</strong> This will permanently delete your current application and all your data (subjects, documents, parent info). You will be logged out and can re-register fresh. This <strong>cannot be undone</strong>.
     </p>
-    <p class="muted" style="font-size:13px;margin-bottom:14px">Enter your password to confirm.</p>
+    <p class="muted" style="font-size:13px;margin-bottom:14px">Enter your password to confirm deletion.</p>
     <div class="password-field">
       <input id="delete-app-pw" type="password" placeholder="Your login password"/>
       <button type="button" class="password-toggle" id="toggle-delete-pw">👁️</button>
     </div>
     <div id="delete-app-error" class="error"></div>
     <div style="margin-top:14px;display:flex;gap:8px">
-      <button id="confirm-delete-app" style="background:#b91c1c;color:#fff;border:none">Yes, Delete</button>
+      <button id="confirm-delete-app" style="background:#b91c1c;color:#fff;border:none">Yes, Delete Everything</button>
       <button id="cancel-delete-app">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ LIVE CHAT BUBBLE ═══ -->
+<button id="chat-bubble" title="Chat with us" style="
+  position:fixed;bottom:24px;right:24px;z-index:1000;
+  width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#b91c1c,#dc2626);
+  box-shadow:0 4px 18px rgba(185,28,28,.45);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;transition:.2s;
+">💬<span id="chat-badge" style="display:none;position:absolute;top:4px;right:4px;background:#f97316;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center"></span></button>
+
+<!-- ═══ LIVE CHAT PANEL ═══ -->
+<div id="chat-panel" style="
+  display:none;position:fixed;bottom:96px;right:24px;z-index:999;
+  width:340px;max-height:520px;border-radius:16px;overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid #e2e8f0;
+  display:none;flex-direction:column;background:#fff;
+">
+  <!-- Chat header -->
+  <div style="background:linear-gradient(135deg,#b91c1c,#dc2626);padding:14px 16px;display:flex;align-items:center;gap:10px;">
+    <img src="{{ url_for('static', filename='logo.webp') }}" alt="Logo" style="width:34px;height:34px;border-radius:8px;object-fit:cover;border:2px solid rgba(255,255,255,.4)"/>
+    <div style="flex:1">
+      <div style="color:#fff;font-size:14px;font-weight:700">SIYATOP</div>
+      <div id="chat-status-label" style="color:rgba(255,255,255,.8);font-size:11px">Virtual Assistant • Online</div>
+    </div>
+    <button id="chat-close" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+  </div>
+  <!-- Messages area -->
+  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:280px;max-height:340px;background:#f8fafc"></div>
+  <!-- Input area -->
+  <div style="padding:12px;border-top:1px solid #e2e8f0;display:flex;gap:8px;background:#fff">
+    <input id="chat-input" type="text" placeholder="Type your message…" style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:inherit;outline:none"/>
+    <button id="chat-send" style="background:#b91c1c;color:#fff;border:none;border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700;font-size:13px">Send</button>
   </div>
 </div>
 
@@ -280,6 +323,12 @@
     idNumber:     "{{ parent.id_number if parent else '' }}",
     phone:        "{{ parent.phone if parent else '' }}",
     email:        "{{ parent.email if parent else '' }}"
+  };
+  const learnerData = {
+    firstName: "{{ learner.first_name }}",
+    lastName:  "{{ learner.last_name }}",
+    email:     "{{ learner.email }}",
+    cellphone: "{{ learner.cellphone }}"
   };
 </script>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>

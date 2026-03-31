@@ -34,7 +34,6 @@ DOCUMENT_TYPES = {
     'disabilityDoc':      {'name': 'Doctor\'s Letter (Disability)',       'required': False, 'disability_only': True},
 }
 
-
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db():
@@ -51,7 +50,6 @@ def get_db():
 
 
 class _SQLiteCompat:
-    """Wraps SQLite to behave like psycopg2 — same cursor API, %s placeholders."""
     def __init__(self, conn):
         self._conn = conn
     def cursor(self):
@@ -189,11 +187,37 @@ def init_db():
             updated_at      TEXT
         )
     ''')
+    # Add photo columns if they don't exist yet (safe migration)
+    for col in ('teacher_photo', 'rep1_photo', 'rep2_photo'):
+        try:
+            cur.execute(f'ALTER TABLE class_assignments ADD COLUMN IF NOT EXISTS {col} TEXT')
+        except Exception:
+            pass
     cur.execute('''
         CREATE TABLE IF NOT EXISTS doc_reminders (
             id         SERIAL PRIMARY KEY,
             learner_id INTEGER NOT NULL UNIQUE REFERENCES learners(id),
             last_sent  TEXT
+        )
+    ''')
+    # Live chat tables
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+            id          SERIAL PRIMARY KEY,
+            learner_id  INTEGER NOT NULL REFERENCES learners(id),
+            status      TEXT NOT NULL DEFAULT 'bot',
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id          SERIAL PRIMARY KEY,
+            session_id  INTEGER NOT NULL,
+            sender      TEXT NOT NULL,
+            message     TEXT NOT NULL,
+            sent_at     TEXT NOT NULL,
+            is_read     INTEGER NOT NULL DEFAULT 0
         )
     ''')
     cur.execute('SELECT id FROM admins LIMIT 1')
@@ -259,7 +283,7 @@ def validate_sa_id(id_number, min_age=None, max_age=None):
             doubled = d * 2
             total += doubled if doubled < 10 else doubled - 9
     if checksum != (10 - (total % 10)) % 10:
-        return False, 'ID number failed checksum verification. This ID appears to be invalid or fabricated.'
+        return False, 'ID number failed checksum verification.'
     full_year = (2000 + year_2d) if year_2d <= (datetime.datetime.utcnow().year - 2000) else (1900 + year_2d)
     if min_age is not None or max_age is not None:
         try:
@@ -277,7 +301,7 @@ def validate_sa_id(id_number, min_age=None, max_age=None):
 
 
 def verify_recaptcha(token):
-    if not token or RECAPTCHA_SECRET_KEY == '6Lfs3pUsAAAAAP73kk-AXMiWRQ6q-y6NFyny551B':
+    if not token or not RECAPTCHA_SECRET_KEY:
         return True
     try:
         data = urllib.parse.urlencode({'secret': RECAPTCHA_SECRET_KEY, 'response': token}).encode()
@@ -338,6 +362,8 @@ def get_learner(id_number):
 
 
 def gemini_message(prompt):
+    if not GEMINI_API_KEY:
+        return None
     payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode()
     req = urllib.request.Request(
         f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
@@ -346,7 +372,8 @@ def gemini_message(prompt):
     try:
         with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read())["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except Exception:
+    except Exception as e:
+        app.logger.error(f"Gemini API error: {e}")
         return None
 
 
@@ -404,49 +431,59 @@ def ai_doc_reminder_msg(name, missing_docs):
     )
 
 
+def build_email_html(body, school_name, logo_url=None):
+    logo_tag = f'<img src="{logo_url}" alt="Logo" style="width:48px;height:48px;border-radius:10px;object-fit:cover;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;" />' if logo_url else ''
+    return f"""
+    <html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:0;margin:0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:30px 0;">
+        <tr><td align="center">
+          <table width="580" cellpadding="0" cellspacing="0"
+                 style="background:#ffffff;border-radius:12px;overflow:hidden;
+                        border:1px solid #e2e8f0;box-shadow:0 4px 20px rgba(0,0,0,.06);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#b91c1c,#dc2626);
+                          padding:28px 32px;text-align:center;">
+                {logo_tag}
+                <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">🏫 {school_name}</h1>
+                <p style="color:rgba(255,255,255,.8);margin:4px 0 0;font-size:13px;">Admissions Office</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <p style="color:#1e293b;font-size:15px;line-height:1.7;white-space:pre-line;margin:0;">{body}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center;">
+                <p style="color:#94a3b8;font-size:12px;margin:0;">
+                  {school_name} &nbsp;|&nbsp; Admissions Portal<br/>
+                  This is an automated message — please do not reply to this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </body></html>
+    """
+
+
 def send_notification_email(to_email, subject, body, to_name=""):
+    if not SMTP_SENDER_EMAIL or not SMTP_SENDER_PASSWORD:
+        app.logger.warning(f"SMTP not configured — skipping email to {to_email}: {subject}")
+        return False
     try:
         msg            = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"]    = f"{SMTP_SENDER_NAME} <{SMTP_SENDER_EMAIL}>"
         msg["To"]      = f"{to_name} <{to_email}>" if to_name else to_email
-        html = f"""
-        <html><body style="font-family:Arial,sans-serif;background:#f8fafc;padding:0;margin:0;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:30px 0;">
-            <tr><td align="center">
-              <table width="580" cellpadding="0" cellspacing="0"
-                     style="background:#ffffff;border-radius:12px;overflow:hidden;
-                            border:1px solid #e2e8f0;box-shadow:0 4px 20px rgba(0,0,0,.06);">
-                <tr>
-                  <td style="background:linear-gradient(135deg,#b91c1c,#dc2626);
-                              padding:28px 32px;text-align:center;">
-                    <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">🏫 {SCHOOL_NAME}</h1>
-                    <p style="color:rgba(255,255,255,.8);margin:4px 0 0;font-size:13px;">Admissions Office</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:32px;">
-                    <p style="color:#1e293b;font-size:15px;line-height:1.7;white-space:pre-line;margin:0;">{body}</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center;">
-                    <p style="color:#94a3b8;font-size:12px;margin:0;">
-                      {SCHOOL_NAME} &nbsp;|&nbsp; Admissions Portal<br/>
-                      This is an automated message — please do not reply to this email.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td></tr>
-          </table>
-        </body></html>
-        """
+        html = build_email_html(body, SCHOOL_NAME)
         msg.attach(MIMEText(body, "plain"))
         msg.attach(MIMEText(html, "html"))
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(SMTP_SENDER_EMAIL, SMTP_SENDER_PASSWORD.replace(" ", ""))
             server.sendmail(SMTP_SENDER_EMAIL, to_email, msg.as_string())
+        app.logger.info(f"Email sent to {to_email}: {subject}")
         return True
     except Exception as e:
         app.logger.error(f"SMTP email failed to {to_email}: {e}")
@@ -599,6 +636,19 @@ def register():
     year    = get_application_year()
 
     try:
+        # If re-registering after deletion, delete old record fully first
+        if existing and existing['is_deleted']:
+            old_lid = existing['id']
+            cur.execute('DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE learner_id=%s)', (old_lid,))
+            cur.execute('DELETE FROM chat_sessions WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM doc_reminders WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM email_log WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM documents WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM subjects WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM parents WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM applications WHERE learner_id=%s', (old_lid,))
+            cur.execute('DELETE FROM learners WHERE id=%s', (old_lid,))
+
         cur.execute(
             'INSERT INTO learners(title,gender,first_name,last_name,id_number,cellphone,email,email_verified,password_hash,created_at,has_disability,disability_type) VALUES(%s,%s,%s,%s,%s,%s,%s,0,%s,%s,%s,%s) RETURNING id',
             (title, gender, first_name, last_name, id_number, cellphone, email, pw_hash, now_iso, 1 if has_disability else 0, disability_type)
@@ -662,9 +712,10 @@ def verify_account_otp():
     try:
         body    = ai_registration_msg(full_name, app_row['grade'], app_row['year'])
         subject = f"[{SCHOOL_NAME}] Application Received — Under Review"
-        send_emailjs(learner['email'], subject, body, full_name)
-        log_email(db, learner['id'], 'registration_received', learner['email'])
-        db.commit()
+        sent    = send_emailjs(learner['email'], subject, body, full_name)
+        if sent:
+            log_email(db, learner['id'], 'registration_received', learner['email'])
+            db.commit()
     except Exception as e:
         app.logger.error(f"Post-verification email failed: {e}")
     cur.close(); db.close()
@@ -747,6 +798,7 @@ def verify_learner_password():
 @app.route('/delete-application', methods=['POST'])
 @learner_required
 def delete_application():
+    """Fully purge the learner's application and all linked data so they can re-apply."""
     password = request.form.get('password', '').strip()
     db  = get_db()
     cur = db.cursor()
@@ -763,51 +815,78 @@ def delete_application():
     if app_row['status'] != 'Pending':
         cur.close(); db.close()
         return jsonify(success=False, error='Only pending applications can be deleted.')
-    cur.execute('DELETE FROM applications WHERE id=%s', (app_row['id'],))
-    cur.execute('DELETE FROM subjects WHERE learner_id=%s', (session['learner_id'],))
+
+    lid = session['learner_id']
+    # Full data purge — delete everything linked to this learner
+    cur.execute('DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE learner_id=%s)', (lid,))
+    cur.execute('DELETE FROM chat_sessions WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM doc_reminders WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM email_log WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM documents WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM subjects WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM parents WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM applications WHERE learner_id=%s', (lid,))
+    cur.execute('DELETE FROM learners WHERE id=%s', (lid,))
     db.commit()
     cur.close(); db.close()
-    return jsonify(success=True)
+    session.clear()
+    return jsonify(success=True, message='Application and all data deleted. You may re-register.')
 
 
-
-@app.route('/edit-cellphone', methods=['POST'])
-@learner_required
-def edit_cellphone():
-    cellphone = request.form.get('cellphone', '').strip()
-    if not cellphone:
-        return jsonify(success=False, error='Cellphone is required.')
-    db  = get_db()
-    cur = db.cursor()
-    cur.execute('UPDATE learners SET cellphone=%s WHERE id=%s', (cellphone, session['learner_id']))
-    db.commit()
-    cur.close(); db.close()
-    return jsonify(success=True)
-
-
+# ── EDIT PROFILE (new: name, surname, email, cellphone) ──────────────────────
 @app.route('/edit-profile', methods=['POST'])
 @learner_required
 def edit_profile():
-    cellphone = request.form.get('cellphone', '').strip()
+    first_name = request.form.get('firstName', '').strip()
+    last_name  = request.form.get('lastName', '').strip()
+    email      = request.form.get('email', '').strip().lower()
+    cellphone  = request.form.get('cellphone', '').strip()
+
+    if not first_name or not last_name:
+        return jsonify(success=False, error='First name and last name are required.')
+    if not email:
+        return jsonify(success=False, error='Email is required.')
     if not cellphone:
         return jsonify(success=False, error='Cellphone is required.')
+
     db  = get_db()
     cur = db.cursor()
-    cur.execute('UPDATE learners SET cellphone=%s WHERE id=%s', (cellphone, session['learner_id']))
+    # Check email uniqueness (excluding current learner)
+    cur.execute('SELECT id FROM learners WHERE email=%s AND id!=%s AND is_deleted=0', (email, session['learner_id']))
+    if cur.fetchone():
+        cur.close(); db.close()
+        return jsonify(success=False, error='This email is already used by another account.')
+    cur.execute(
+        'UPDATE learners SET first_name=%s, last_name=%s, email=%s, cellphone=%s WHERE id=%s',
+        (first_name, last_name, email, cellphone, session['learner_id'])
+    )
     db.commit()
     cur.close(); db.close()
     return jsonify(success=True)
 
 
+# ── EDIT PARENT (all fields) ──────────────────────────────────────────────────
 @app.route('/edit-parent', methods=['POST'])
 @learner_required
 def edit_parent():
-    f   = request.form
+    f          = request.form
+    rel        = f.get('relationship', '').strip()
+    name       = f.get('name', '').strip()
+    id_number  = f.get('idNumber', '').strip()
+    phone      = f.get('phone', '').strip()
+    email      = f.get('email', '').strip()
+
+    if not all([rel, name, id_number, phone]):
+        return jsonify(success=False, error='All parent fields (except email) are required.')
+
+    p_id_valid, p_id_result = validate_sa_id(id_number)
+    if not p_id_valid:
+        return jsonify(success=False, error=f'Parent ID: {p_id_result}')
+
     db  = get_db()
     cur = db.cursor()
-    cur.execute('UPDATE parents SET relationship=%s,name=%s,id_number=%s,phone=%s,email=%s WHERE learner_id=%s',
-               (f.get('relationship'), f.get('name'), f.get('idNumber'),
-                f.get('phone'), f.get('email'), session['learner_id']))
+    cur.execute('UPDATE parents SET relationship=%s, name=%s, id_number=%s, phone=%s, email=%s WHERE learner_id=%s',
+               (rel, name, id_number, phone, email, session['learner_id']))
     db.commit()
     cur.close(); db.close()
     return jsonify(success=True)
@@ -934,6 +1013,213 @@ def apply_next_year():
     return jsonify(success=True, message=f'Applied for Grade {next_grade} in {target_year}.')
 
 
+# ── LIVE CHAT ─────────────────────────────────────────────────────────────────
+@app.route('/chat/session', methods=['GET', 'POST'])
+@learner_required
+def chat_session():
+    lid = session['learner_id']
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('SELECT * FROM chat_sessions WHERE learner_id=%s ORDER BY id DESC LIMIT 1', (lid,))
+    sess = cur.fetchone()
+    if not sess:
+        now_iso = datetime.datetime.utcnow().isoformat()
+        cur.execute('INSERT INTO chat_sessions(learner_id,status,created_at,updated_at) VALUES(%s,%s,%s,%s) RETURNING id',
+                   (lid, 'bot', now_iso, now_iso))
+        sess_id = cur.fetchone()['id']
+        # Welcome bot message
+        bot_msg = "👋 Hello! I'm SIYATOP, your virtual assistant at Siyaphakama High School. How can I help you today? You can ask me about your application status, required documents, or anything else. If you need to speak to an admin, just type 'speak to admin'."
+        cur.execute('INSERT INTO chat_messages(session_id,sender,message,sent_at,is_read) VALUES(%s,%s,%s,%s,1)',
+                   (sess_id, 'bot', bot_msg, now_iso))
+        db.commit()
+        cur.execute('SELECT * FROM chat_sessions WHERE id=%s', (sess_id,))
+        sess = cur.fetchone()
+    cur.execute('SELECT * FROM chat_messages WHERE session_id=%s ORDER BY sent_at ASC', (sess['id'],))
+    messages = cur.fetchall()
+    # Mark learner messages as read for admin, but mark admin messages as read for learner
+    cur.execute('UPDATE chat_messages SET is_read=1 WHERE session_id=%s AND sender=%s',
+               (sess['id'], 'admin'))
+    db.commit()
+    cur.close(); db.close()
+    return jsonify(success=True, session=dict(sess), messages=[dict(m) for m in messages])
+
+
+@app.route('/chat/send', methods=['POST'])
+@learner_required
+def chat_send():
+    lid     = session['learner_id']
+    message = request.form.get('message', '').strip()
+    if not message:
+        return jsonify(success=False, error='Message cannot be empty.')
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('SELECT * FROM chat_sessions WHERE learner_id=%s ORDER BY id DESC LIMIT 1', (lid,))
+    sess = cur.fetchone()
+    if not sess:
+        cur.close(); db.close()
+        return jsonify(success=False, error='No chat session found.')
+    now_iso = datetime.datetime.utcnow().isoformat()
+    cur.execute('INSERT INTO chat_messages(session_id,sender,message,sent_at,is_read) VALUES(%s,%s,%s,%s,0)',
+               (sess['id'], 'learner', message, now_iso))
+    cur.execute('UPDATE chat_sessions SET updated_at=%s WHERE id=%s', (now_iso, sess['id']))
+
+    bot_reply = None
+    if sess['status'] == 'bot':
+        msg_lower = message.lower()
+        if any(kw in msg_lower for kw in ['admin', 'human', 'person', 'staff', 'help me', 'speak to', 'talk to']):
+            # Escalate to admin
+            cur.execute('UPDATE chat_sessions SET status=%s WHERE id=%s', ('waiting', sess['id']))
+            bot_reply = "⏳ I'm connecting you to a Siyaphakama admin now. Please hold on — an admin will reply to you shortly. Thank you for your patience! 🙏"
+        else:
+            # SIYATOP bot auto-responses
+            if any(kw in msg_lower for kw in ['status', 'application', 'applied']):
+                cur.execute('SELECT * FROM learners WHERE id=%s', (lid,))
+                lrn = cur.fetchone()
+                cur.execute('SELECT * FROM applications WHERE learner_id=%s ORDER BY id DESC LIMIT 1', (lid,))
+                app_row = cur.fetchone()
+                if app_row:
+                    bot_reply = f"📋 Your application for Grade {app_row['grade']} ({app_row['year']}) is currently **{app_row['status']}**. Applied on {app_row['applied_at'][:10]}."
+                else:
+                    bot_reply = "📋 I couldn't find an active application on your account. Please contact admin if you believe this is an error."
+            elif any(kw in msg_lower for kw in ['document', 'upload', 'file', 'missing']):
+                bot_reply = "📂 You can upload your documents on your dashboard under 'Required Documents'. Make sure to upload: Learner ID Copy, Parent ID Copy, School Report, and Proof of Residence. Need more help? Type 'speak to admin'."
+            elif any(kw in msg_lower for kw in ['password', 'login', 'forgot']):
+                bot_reply = "🔑 To reset your password, click 'Forgot Password' on the login page. You'll receive an OTP to reset it. Still stuck? Type 'speak to admin'."
+            elif any(kw in msg_lower for kw in ['grade', 'class', 'subject']):
+                bot_reply = "🏫 Grade 8 & 9 learners have fixed subjects. Grade 10-12 learners choose between Science and Humanities streams. Check your dashboard for your assigned subjects."
+            elif any(kw in msg_lower for kw in ['when', 'date', 'open', 'close', 'deadline']):
+                bot_reply = "📅 Applications are open from 1 March each year and close in February of the following year. Make sure to submit before the deadline!"
+            elif any(kw in msg_lower for kw in ['hello', 'hi', 'hey', 'good']):
+                bot_reply = "😊 Hello there! I'm SIYATOP. I'm here to help you with your Siyaphakama application. What would you like to know? You can ask about your application status, documents, or anything else!"
+            elif any(kw in msg_lower for kw in ['thank', 'thanks']):
+                bot_reply = "🌟 You're very welcome! Is there anything else I can help you with?"
+            else:
+                bot_reply = "🤔 I'm not sure I understood that. Here's what I can help with:\n• Application status\n• Document uploads\n• Password reset\n• Application dates\n• Class & subject info\n\nOr type **'speak to admin'** to chat with our team directly!"
+
+    if bot_reply:
+        cur.execute('INSERT INTO chat_messages(session_id,sender,message,sent_at,is_read) VALUES(%s,%s,%s,%s,0)',
+                   (sess['id'], 'bot', bot_reply, datetime.datetime.utcnow().isoformat()))
+
+    db.commit()
+    # Return updated messages
+    cur.execute('SELECT * FROM chat_messages WHERE session_id=%s ORDER BY sent_at ASC', (sess['id'],))
+    messages = cur.fetchall()
+    cur.execute('SELECT * FROM chat_sessions WHERE id=%s', (sess['id'],))
+    updated_sess = cur.fetchone()
+    cur.close(); db.close()
+    return jsonify(success=True, session=dict(updated_sess), messages=[dict(m) for m in messages])
+
+
+@app.route('/chat/poll', methods=['GET'])
+@learner_required
+def chat_poll():
+    lid = session['learner_id']
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('SELECT * FROM chat_sessions WHERE learner_id=%s ORDER BY id DESC LIMIT 1', (lid,))
+    sess = cur.fetchone()
+    if not sess:
+        cur.close(); db.close()
+        return jsonify(success=False)
+    since = request.args.get('since', '')
+    if since:
+        cur.execute('SELECT * FROM chat_messages WHERE session_id=%s AND sent_at>%s ORDER BY sent_at ASC',
+                   (sess['id'], since))
+    else:
+        cur.execute('SELECT * FROM chat_messages WHERE session_id=%s ORDER BY sent_at ASC', (sess['id'],))
+    messages = cur.fetchall()
+    cur.execute('UPDATE chat_messages SET is_read=1 WHERE session_id=%s AND sender IN (%s,%s)',
+               (sess['id'], 'admin', 'bot'))
+    db.commit()
+    cur.close(); db.close()
+    return jsonify(success=True, session=dict(sess), messages=[dict(m) for m in messages])
+
+
+# ── ADMIN CHAT ────────────────────────────────────────────────────────────────
+@app.route('/admin/chat/sessions')
+@admin_required
+def admin_chat_sessions():
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('''
+        SELECT cs.*, l.first_name, l.last_name, l.id_number,
+               (SELECT COUNT(*) FROM chat_messages cm WHERE cm.session_id=cs.id AND cm.sender='learner' AND cm.is_read=0) as unread
+        FROM chat_sessions cs
+        JOIN learners l ON l.id=cs.learner_id
+        WHERE cs.status IN ('waiting','active')
+        ORDER BY cs.updated_at DESC
+    ''')
+    sessions = cur.fetchall()
+    cur.close(); db.close()
+    return jsonify(success=True, sessions=[dict(s) for s in sessions])
+
+
+@app.route('/admin/chat/messages/<int:sess_id>')
+@admin_required
+def admin_chat_messages(sess_id):
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('SELECT * FROM chat_messages WHERE session_id=%s ORDER BY sent_at ASC', (sess_id,))
+    messages = cur.fetchall()
+    cur.execute('UPDATE chat_messages SET is_read=1 WHERE session_id=%s AND sender=%s', (sess_id, 'learner'))
+    cur.execute('UPDATE chat_sessions SET status=%s WHERE id=%s AND status=%s', ('active', sess_id, 'waiting'))
+    db.commit()
+    cur.close(); db.close()
+    return jsonify(success=True, messages=[dict(m) for m in messages])
+
+
+@app.route('/admin/chat/send', methods=['POST'])
+@admin_required
+def admin_chat_send():
+    sess_id = request.form.get('session_id', '').strip()
+    message = request.form.get('message', '').strip()
+    if not message or not sess_id:
+        return jsonify(success=False, error='Missing data.')
+    db  = get_db()
+    cur = db.cursor()
+    now_iso = datetime.datetime.utcnow().isoformat()
+    cur.execute('INSERT INTO chat_messages(session_id,sender,message,sent_at,is_read) VALUES(%s,%s,%s,%s,0)',
+               (sess_id, 'admin', message, now_iso))
+    cur.execute('UPDATE chat_sessions SET status=%s, updated_at=%s WHERE id=%s', ('active', now_iso, sess_id))
+    db.commit()
+    cur.execute('SELECT * FROM chat_messages WHERE session_id=%s ORDER BY sent_at ASC', (sess_id,))
+    messages = cur.fetchall()
+    cur.close(); db.close()
+    return jsonify(success=True, messages=[dict(m) for m in messages])
+
+
+@app.route('/admin/chat/close/<int:sess_id>', methods=['POST'])
+@admin_required
+def admin_chat_close(sess_id):
+    db  = get_db()
+    cur = db.cursor()
+    now_iso = datetime.datetime.utcnow().isoformat()
+    cur.execute('UPDATE chat_sessions SET status=%s, updated_at=%s WHERE id=%s', ('closed', now_iso, sess_id))
+    cur.execute('INSERT INTO chat_messages(session_id,sender,message,sent_at,is_read) VALUES(%s,%s,%s,%s,1)',
+               (sess_id, 'bot', '✅ This chat session has been closed by admin. Thank you for contacting Siyaphakama High School!', now_iso))
+    db.commit()
+    cur.close(); db.close()
+    return jsonify(success=True)
+
+
+@app.route('/admin/chat/unread-count')
+@admin_required
+def admin_chat_unread_count():
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('''
+        SELECT COUNT(DISTINCT cs.id) as count
+        FROM chat_sessions cs
+        JOIN chat_messages cm ON cm.session_id=cs.id
+        WHERE cs.status IN ('waiting','active') AND cm.sender='learner' AND cm.is_read=0
+    ''')
+    row = cur.fetchone()
+    cur.close(); db.close()
+    count = list(row.values())[0] if row else 0
+    return jsonify(success=True, count=count)
+
+
+# ── ADMIN ─────────────────────────────────────────────────────────────────────
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if session.get('admin_id'):
@@ -976,6 +1262,15 @@ def admin_dashboard():
         'declined': count("SELECT COUNT(*) FROM applications a JOIN learners l ON l.id=a.learner_id WHERE a.status='Declined' AND l.is_deleted=0"),
         'deleted':  count("SELECT COUNT(*) FROM learners WHERE is_deleted=1"),
     }
+    # unread chat count
+    cur.execute('''
+        SELECT COUNT(DISTINCT cs.id) as count FROM chat_sessions cs
+        JOIN chat_messages cm ON cm.session_id=cs.id
+        WHERE cs.status IN ('waiting','active') AND cm.sender='learner' AND cm.is_read=0
+    ''')
+    row = cur.fetchone()
+    stats['chat_unread'] = list(row.values())[0] if row else 0
+
     if filter == 'deleted':
         cur.execute('''
             SELECT l.id, l.first_name, l.last_name, l.id_number, l.email, l.cellphone,
@@ -1088,17 +1383,6 @@ def admin_grade_view(grade):
             ''', (grade, stream))
             learners = cur.fetchall()
             classes.append({'key': ck, 'label': f'Grade {grade} — {stream}', 'cls_row': cls_row, 'learners': learners})
-    else:
-        cur.execute('SELECT * FROM class_assignments WHERE class_key=%s', (grade,))
-        cls_row = cur.fetchone()
-        cur.execute('''
-            SELECT l.id, l.first_name, l.last_name, l.id_number, l.learner_class, a.status
-            FROM learners l JOIN applications a ON a.learner_id=l.id
-            WHERE a.grade=%s AND l.is_deleted=0
-            ORDER BY l.first_name
-        ''', (grade,))
-        learners = cur.fetchall()
-        classes.append({'key': grade, 'label': f'Grade {grade}', 'cls_row': cls_row, 'learners': learners})
     cur.close(); db.close()
     return render_template('admin/grade_view.html', grade=grade, classes=classes,
                            admin=session.get('admin_username'))
@@ -1133,11 +1417,12 @@ def admin_review(app_id):
         body       = ai_declined_msg(full_name, app_row['grade'], app_row['year'], reason or 'Not specified')
         subject    = f"[{SCHOOL_NAME}] Application Outcome"
         email_type = 'declined'
-    send_emailjs(learner['email'], subject, body, full_name)
-    log_email(db, learner['id'], email_type, learner['email'])
-    db.commit()
+    sent = send_emailjs(learner['email'], subject, body, full_name)
+    if sent:
+        log_email(db, learner['id'], email_type, learner['email'])
+        db.commit()
     cur.close(); db.close()
-    flash(f'Application {decision}. Email sent to {learner["email"]}.', 'success')
+    flash(f'Application {decision}. {"Email sent to " + learner["email"] if sent else "Email could not be sent."}', 'success')
     return redirect(url_for('admin_learner_detail', lid=learner['id']))
 
 
@@ -1170,7 +1455,7 @@ def admin_send_reminder(lid):
         db.commit()
         flash(f'Reminder sent to {learner["email"]}.', 'success')
     else:
-        flash('Failed to send reminder.', 'error')
+        flash('Failed to send reminder. Check SMTP configuration.', 'error')
     cur.close(); db.close()
     return redirect(url_for('admin_learner_detail', lid=lid))
 
@@ -1287,6 +1572,54 @@ def admin_classes_save():
     return redirect(url_for('admin_classes'))
 
 
+@app.route('/admin/classes/upload-photo', methods=['POST'])
+@admin_required
+def admin_classes_upload_photo():
+    class_key  = request.form.get('class_key', '').strip()
+    photo_role = request.form.get('photo_role', '').strip()   # teacher | rep1 | rep2
+    valid_keys = ['8A', '8B', '9A', '9B', '10-Science', '10-Humanities',
+                  '11-Science', '11-Humanities', '12-Science', '12-Humanities']
+    valid_roles = ('teacher', 'rep1', 'rep2')
+    if class_key not in valid_keys or photo_role not in valid_roles:
+        flash('Invalid class or role.', 'error')
+        return redirect(url_for('admin_classes'))
+    if 'photo' not in request.files or request.files['photo'].filename == '':
+        flash('No file selected.', 'error')
+        return redirect(url_for('admin_classes'))
+    file = request.files['photo']
+    ext  = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in {'png', 'jpg', 'jpeg', 'gif', 'webp'}:
+        flash('Allowed image types: PNG, JPG, JPEG, GIF, WEBP.', 'error')
+        return redirect(url_for('admin_classes'))
+    folder   = os.path.join(app.config['UPLOAD_FOLDER'], 'class_photos')
+    os.makedirs(folder, exist_ok=True)
+    safe_key = class_key.replace('-', '_')
+    filename = secure_filename(f"{safe_key}_{photo_role}.{ext}")
+    file.save(os.path.join(folder, filename))
+    col = f"{photo_role}_photo"
+    db  = get_db()
+    cur = db.cursor()
+    cur.execute('SELECT id FROM class_assignments WHERE class_key=%s', (class_key,))
+    if cur.fetchone():
+        cur.execute(f'UPDATE class_assignments SET {col}=%s WHERE class_key=%s', (filename, class_key))
+    else:
+        now_iso = datetime.datetime.utcnow().isoformat()
+        cur.execute(f'INSERT INTO class_assignments(class_key,{col},updated_at) VALUES(%s,%s,%s)',
+                    (class_key, filename, now_iso))
+    db.commit()
+    cur.close(); db.close()
+    flash(f'Photo uploaded successfully for {photo_role}.', 'success')
+    return redirect(url_for('admin_classes'))
+
+
+@app.route('/class-photo/<filename>')
+def class_photo(filename):
+    """Serve class assignment photos (teacher / rep). Public."""
+    filename = secure_filename(filename)
+    folder   = os.path.join(app.config['UPLOAD_FOLDER'], 'class_photos')
+    return send_from_directory(folder, filename)
+
+
 @app.route('/admin/classes/assign', methods=['POST'])
 @admin_required
 def admin_assign_class():
@@ -1348,19 +1681,24 @@ def my_class_info():
         cur.execute('SELECT first_name, last_name FROM learners WHERE id=%s', (rep_id,))
         r = cur.fetchone()
         return f"{r['first_name']} {r['last_name']}" if r else None
+    def photo_url(fname):
+        if not fname: return None
+        return url_for('class_photo', filename=fname)
     result = jsonify(
-        success    = True,
-        grade      = grade,
-        assigned   = True,
-        class_name = class_name,
-        teacher    = row['teacher'] or None,
-        rep1       = rep_name(row['rep1_learner_id']),
-        rep2       = rep_name(row['rep2_learner_id']),
-        updated    = (row['updated_at'] or '')[:10]
+        success        = True,
+        grade          = grade,
+        assigned       = True,
+        class_name     = class_name,
+        teacher        = row['teacher'] or None,
+        teacher_photo  = photo_url(row.get('teacher_photo')),
+        rep1           = rep_name(row['rep1_learner_id']),
+        rep1_photo     = photo_url(row.get('rep1_photo')),
+        rep2           = rep_name(row['rep2_learner_id']),
+        rep2_photo     = photo_url(row.get('rep2_photo')),
+        updated        = (row['updated_at'] or '')[:10]
     )
     cur.close(); db.close()
     return result
-
 
 
 os.makedirs('uploads', exist_ok=True)
