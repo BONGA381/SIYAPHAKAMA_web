@@ -189,17 +189,18 @@ def init_db():
     ''')
     # Add photo columns if they don't exist yet (safe migration with savepoints)
     for col in ('teacher_photo', 'rep1_photo', 'rep2_photo'):
-        cur.execute('''
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name=\'class_assignments\' AND column_name=%s
-        ''', (col,))
+        cur.execute(
+            "SELECT 1 FROM information_schema.columns"
+            " WHERE table_name='class_assignments' AND column_name=%s",
+            (col,)
+        )
         if not cur.fetchone():
             try:
-                cur.execute(f'SAVEPOINT add_col_{col}')
-                cur.execute(f'ALTER TABLE class_assignments ADD COLUMN {col} TEXT')
-                cur.execute(f'RELEASE SAVEPOINT add_col_{col}')
+                cur.execute('SAVEPOINT add_col_' + col)
+                cur.execute('ALTER TABLE class_assignments ADD COLUMN ' + col + ' TEXT')
+                cur.execute('RELEASE SAVEPOINT add_col_' + col)
             except Exception:
-                cur.execute(f'ROLLBACK TO SAVEPOINT add_col_{col}')
+                cur.execute('ROLLBACK TO SAVEPOINT add_col_' + col)
     cur.execute('''
         CREATE TABLE IF NOT EXISTS doc_reminders (
             id         SERIAL PRIMARY KEY,
