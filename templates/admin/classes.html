@@ -43,14 +43,6 @@
     .section-label{font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 10px;padding-top:12px;border-top:1px solid #f1f5f9}
     .btn-save{width:100%;padding:11px;background:linear-gradient(135deg,#b91c1c,#dc2626);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;transition:.2s}
     .btn-save:hover{opacity:.9;transform:translateY(-1px)}
-    .photo-upload-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:8px}
-    .photo-preview{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;background:#e2e8f0}
-    .photo-preview-placeholder{width:48px;height:48px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-    .photo-upload-info{flex:1;min-width:0}
-    .photo-upload-label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-    .photo-upload-btn{display:inline-block;padding:5px 12px;background:#1e293b;color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;font-family:inherit}
-    .photo-upload-btn:hover{background:#334155}
-    .photo-upload-input{display:none}
     .assigned-info{background:#f0f9f4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px}
     .assigned-info strong{color:#15803d}
     .assigned-row{display:flex;justify-content:space-between;padding:3px 0}
@@ -70,6 +62,13 @@
     .assign-form select{padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;outline:none}
     .btn-assign{padding:5px 14px;background:#1e293b;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
     .btn-assign:hover{background:#334155}
+    .photo-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:8px;margin-bottom:12px}
+    .photo-circle{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden}
+    .photo-circle img{width:100%;height:100%;object-fit:cover}
+    .photo-lbl{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+    .photo-btn{display:inline-block;padding:5px 12px;background:#1e293b;color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
+    .photo-btn:hover{background:#334155}
+    .photo-input{display:none}
   </style>
 </head>
 <body>
@@ -154,45 +153,44 @@
       <div class="class-body">
         {% if row and row.teacher %}
         <div class="assigned-info">
-          <div class="assigned-row" style="align-items:center">
-            {% if row.teacher_photo %}<img src="/class-photo/{{ row.teacher_photo }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #15803d;flex-shrink:0;margin-right:6px" alt=""/>{% endif %}
+          <div class="assigned-row" style="align-items:center;gap:8px">
+            {% if row.teacher_photo %}<img src="/class-photo/{{ row.teacher_photo }}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #86efac" alt=""/>{% endif %}
             <span class="assigned-label">Teacher:</span><strong>{{ row.teacher }}</strong>
           </div>
-          {% if row.rep1_learner_id %}<div class="assigned-row" style="align-items:center">
-            {% if row.rep1_photo %}<img src="/class-photo/{{ row.rep1_photo }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid #15803d;flex-shrink:0;margin-right:6px" alt=""/>{% endif %}
+          {% if row.rep1_learner_id %}<div class="assigned-row" style="align-items:center;gap:8px">
+            {% if row.rep1_photo %}<img src="/class-photo/{{ row.rep1_photo }}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #86efac" alt=""/>{% endif %}
             <span class="assigned-label">Rep 1:</span><strong>{% for l in learners %}{% if l.id == row.rep1_learner_id %}{{ l.first_name }} {{ l.last_name }}{% endif %}{% endfor %}</strong>
           </div>{% endif %}
-          {% if row.rep2_learner_id %}<div class="assigned-row" style="align-items:center">
-            {% if row.rep2_photo %}<img src="/class-photo/{{ row.rep2_photo }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid #15803d;flex-shrink:0;margin-right:6px" alt=""/>{% endif %}
+          {% if row.rep2_learner_id %}<div class="assigned-row" style="align-items:center;gap:8px">
+            {% if row.rep2_photo %}<img src="/class-photo/{{ row.rep2_photo }}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid #86efac" alt=""/>{% endif %}
             <span class="assigned-label">Rep 2:</span><strong>{% for l in learners %}{% if l.id == row.rep2_learner_id %}{{ l.first_name }} {{ l.last_name }}{% endif %}{% endfor %}</strong>
           </div>{% endif %}
           <div style="font-size:11px;color:#94a3b8;margin-top:6px">Updated: {{ (row.updated_at or '')[:10] }}</div>
         </div>
         {% endif %}
+        <!-- Teacher photo upload (separate form, auto-submits) -->
+        <form method="POST" action="/admin/classes/upload-photo" enctype="multipart/form-data" style="margin-bottom:4px">
+          <input type="hidden" name="class_key" value="{{ ck }}"/>
+          <input type="hidden" name="photo_role" value="teacher"/>
+          <div class="photo-row">
+            <div class="photo-circle">
+              {% if row and row.teacher_photo %}<img src="/class-photo/{{ row.teacher_photo }}" alt=""/>{% else %}👩‍🏫{% endif %}
+            </div>
+            <div>
+              <div class="photo-lbl">Teacher Photo</div>
+              <label class="photo-btn" for="tphoto-{{ ck }}">📷 {% if row and row.teacher_photo %}Change{% else %}Upload{% endif %}</label>
+              <input class="photo-input" type="file" id="tphoto-{{ ck }}" name="photo" accept="image/*" onchange="this.form.submit()"/>
+            </div>
+          </div>
+        </form>
+        <!-- Main save form -->
         <form method="POST" action="/admin/classes/save">
           <input type="hidden" name="class_key" value="{{ ck }}"/>
           <div class="field">
-            <label>Class Teacher</label>
+            <label>Class Teacher Name</label>
             <input type="text" name="teacher" value="{{ row.teacher if row else '' }}" />
           </div>
-          <!-- Teacher photo upload -->
-          <form method="POST" action="/admin/classes/upload-photo" enctype="multipart/form-data" style="margin-bottom:14px">
-            <input type="hidden" name="class_key" value="{{ ck }}"/>
-            <input type="hidden" name="photo_role" value="teacher"/>
-            <div class="photo-upload-row">
-              {% if row and row.teacher_photo %}
-                <img class="photo-preview" src="/class-photo/{{ row.teacher_photo }}" alt="Teacher photo"/>
-              {% else %}
-                <div class="photo-preview-placeholder">👩‍🏫</div>
-              {% endif %}
-              <div class="photo-upload-info">
-                <div class="photo-upload-label">Teacher ID Photo</div>
-                <label class="photo-upload-btn" for="teacher-photo-{{ ck }}">📷 {% if row and row.teacher_photo %}Change Photo{% else %}Upload Photo{% endif %}</label>
-                <input class="photo-upload-input" type="file" id="teacher-photo-{{ ck }}" name="photo" accept="image/*" onchange="this.form.submit()"/>
-              </div>
-            </div>
-          </form>
-          <div class="section-label">🎖️ Class Representatives</div>
+          <div class="section-label">&#127894;&#65039; Class Representatives</div>
           {% if learners %}
           <div class="rep-row">
             <div class="field"><label>Rep 1</label>
@@ -209,36 +207,32 @@
             </div>
           </div>
           <!-- Rep photo uploads -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
             <form method="POST" action="/admin/classes/upload-photo" enctype="multipart/form-data">
               <input type="hidden" name="class_key" value="{{ ck }}"/>
               <input type="hidden" name="photo_role" value="rep1"/>
-              <div class="photo-upload-row">
-                {% if row and row.rep1_photo %}
-                  <img class="photo-preview" src="/class-photo/{{ row.rep1_photo }}" alt="Rep 1 photo"/>
-                {% else %}
-                  <div class="photo-preview-placeholder">🌟</div>
-                {% endif %}
-                <div class="photo-upload-info">
-                  <div class="photo-upload-label">Rep 1 Photo</div>
-                  <label class="photo-upload-btn" for="rep1-photo-{{ ck }}">📷 {% if row and row.rep1_photo %}Change{% else %}Upload{% endif %}</label>
-                  <input class="photo-upload-input" type="file" id="rep1-photo-{{ ck }}" name="photo" accept="image/*" onchange="this.form.submit()"/>
+              <div class="photo-row">
+                <div class="photo-circle">
+                  {% if row and row.rep1_photo %}<img src="/class-photo/{{ row.rep1_photo }}" alt=""/>{% else %}🌟{% endif %}
+                </div>
+                <div>
+                  <div class="photo-lbl">Rep 1 Photo</div>
+                  <label class="photo-btn" for="r1photo-{{ ck }}">📷 {% if row and row.rep1_photo %}Change{% else %}Upload{% endif %}</label>
+                  <input class="photo-input" type="file" id="r1photo-{{ ck }}" name="photo" accept="image/*" onchange="this.form.submit()"/>
                 </div>
               </div>
             </form>
             <form method="POST" action="/admin/classes/upload-photo" enctype="multipart/form-data">
               <input type="hidden" name="class_key" value="{{ ck }}"/>
               <input type="hidden" name="photo_role" value="rep2"/>
-              <div class="photo-upload-row">
-                {% if row and row.rep2_photo %}
-                  <img class="photo-preview" src="/class-photo/{{ row.rep2_photo }}" alt="Rep 2 photo"/>
-                {% else %}
-                  <div class="photo-preview-placeholder">⭐</div>
-                {% endif %}
-                <div class="photo-upload-info">
-                  <div class="photo-upload-label">Rep 2 Photo</div>
-                  <label class="photo-upload-btn" for="rep2-photo-{{ ck }}">📷 {% if row and row.rep2_photo %}Change{% else %}Upload{% endif %}</label>
-                  <input class="photo-upload-input" type="file" id="rep2-photo-{{ ck }}" name="photo" accept="image/*" onchange="this.form.submit()"/>
+              <div class="photo-row">
+                <div class="photo-circle">
+                  {% if row and row.rep2_photo %}<img src="/class-photo/{{ row.rep2_photo }}" alt=""/>{% else %}⭐{% endif %}
+                </div>
+                <div>
+                  <div class="photo-lbl">Rep 2 Photo</div>
+                  <label class="photo-btn" for="r2photo-{{ ck }}">📷 {% if row and row.rep2_photo %}Change{% else %}Upload{% endif %}</label>
+                  <input class="photo-input" type="file" id="r2photo-{{ ck }}" name="photo" accept="image/*" onchange="this.form.submit()"/>
                 </div>
               </div>
             </form>
@@ -248,7 +242,7 @@
           <input type="hidden" name="rep1" value=""/>
           <input type="hidden" name="rep2" value=""/>
           {% endif %}
-          <button class="btn-save" type="submit">💾 Save {{ display }}</button>
+          <button class="btn-save" type="submit">&#128190; Save {{ display }}</button>
         </form>
       </div>
     </div>
