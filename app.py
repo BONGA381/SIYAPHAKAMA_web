@@ -215,7 +215,14 @@ def init_db():
             is_read     INTEGER NOT NULL DEFAULT 0
         )
     ''')
-    # Photo columns migration — separate autocommit connection (safe for Postgres)
+    cur.execute('SELECT id FROM admins LIMIT 1')
+    if not cur.fetchone():
+        cur.execute('INSERT INTO admins(username,password_hash) VALUES(%s,%s)',
+                    ('admin', generate_password_hash('Admin@123')))
+    db.commit()
+    cur.close()
+    db.close()
+    # Photo columns migration — runs AFTER commit, on its own autocommit connection
     if DATABASE_URL:
         import psycopg2 as _pg2, psycopg2.extras as _pgx
         _mc = _pg2.connect(DATABASE_URL, cursor_factory=_pgx.RealDictCursor)
@@ -228,13 +235,6 @@ def init_db():
             if not _mcc.fetchone():
                 _mcc.execute('ALTER TABLE class_assignments ADD COLUMN ' + _col + ' TEXT')
         _mcc.close(); _mc.close()
-    cur.execute('SELECT id FROM admins LIMIT 1')
-    if not cur.fetchone():
-        cur.execute('INSERT INTO admins(username,password_hash) VALUES(%s,%s)',
-                    ('admin', generate_password_hash('Admin@123')))
-    db.commit()
-    cur.close()
-    db.close()
 
 
 def admin_required(f):
